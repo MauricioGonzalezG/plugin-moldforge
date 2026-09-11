@@ -149,303 +149,327 @@ def _apply_cast_preset(self, context):
 class MoldForgeProperties(bpy.types.PropertyGroup):
     # --- Mold type ------------------------------------------------------ #
     box_style: EnumProperty(
-        name="Mold Type",
-        description="What MoldForge outputs — the two genuinely different functions",
+        name="Tipo de molde",
+        description="Lo que MoldForge genera — las dos funciones realmente distintas",
         items=[
-            ('POUR_BOX', "Silicone Pour Box",
-             "Printed jacket you pour liquid silicone into — the silicone is the "
-             "mold. For the glove/mother-mold workflow, set a thin gap and turn "
-             "on Glove Skin Keys"),
-            ('SOLID', "Direct Printed Mold",
-             "The printed pieces ARE the mold — cast resin/wax/plaster straight "
-             "in. Shape: hugging (least material) or block (easiest to clamp)"),
-            ('TRAY', "Tray / Open Pour",
-             "One-part open tray (pan) for FLAT or relief objects — text, logos, "
-             "coins, medallions. The object sits at the bottom and the top is open: "
-             "embed it and pour silicone over it for a stamp, carve it for a direct "
-             "cast pan, or print just the frame for a real object. No split, wings "
-             "or funnel"),
+            ('POUR_BOX', "Caja de vertido de silicona",
+             "Carcasa impresa en la que viertes silicona líquida — la silicona es el "
+             "molde. Para el flujo de guante/contra-molde, ajusta un espacio fino y "
+             "activa Llaves de piel de guante"),
+            ('SOLID', "Molde impreso directo",
+             "Las piezas impresas SON el molde — colar resina/cera/yeso directamente "
+             "dentro. Forma: ajustada (menos material) o bloque (la más fácil de "
+             "sujetar)"),
+            ('TRAY', "Bandeja / vertido abierto",
+             "Bandeja abierta de una parte para objetos PLANOS o en relieve — texto, "
+             "logos, monedas, medallones. El objeto se asienta en el fondo y la parte "
+             "superior queda abierta: insértalo y vierte silicona encima para un sello, "
+             "talla el fondo para una colada directa, o imprime solo el marco para un "
+             "objeto real. Sin corte, alas ni embudo"),
         ],
         default='POUR_BOX',
     )
     solid_shape: EnumProperty(
-        name="Shape",
-        description="Outer shape of a direct printed mold",
+        name="Forma",
+        description="Forma exterior de un molde impreso directo",
         items=[
-            ('HUG', "Hugging", "Pieces follow the model's shape — least material"),
-            ('BLOCK', "Block", "Rectangular block — easiest to clamp and stand"),
+            ('HUG', "Ajustado", "Las piezas siguen la forma del modelo — menos material"),
+            ('BLOCK', "Bloque", "Bloque rectangular — el más fácil de sujetar y de "
+             "mantener de pie"),
         ],
         default='HUG',
     )
     skin_keys: BoolProperty(
-        name="Glove Skin Keys",
-        description="Glove / mother-mold workflow: raise registration bumps on the "
-                    "silicone skin that seat into pockets in the rigid shell, so a "
-                    "thin skin can't shift or slump (set the silicone gap to the "
-                    "skin thickness, e.g. 3 mm)",
+        name="Llaves de piel de guante",
+        description="Flujo de guante / contra-molde: genera resaltes de registro en la "
+                    "piel de silicona que asientan en cavidades de la carcasa rígida, "
+                    "para que una piel fina no se desplace ni se hunda (ajusta el "
+                    "espacio de silicona al grosor de la piel, p. ej. 3 mm)",
         default=False,
     )
 
     # --- Tray / open pour (flat & relief objects) ----------------------- #
     tray_mode: EnumProperty(
-        name="Tray Mode",
-        description="What the printed tray does with your object",
+        name="Modo de bandeja",
+        description="Qué hace la bandeja impresa con tu objeto",
         items=[
-            ('EMBED', "Embed → silicone stamp",
-             "Fuse the object into the tray floor and pour SILICONE over it. The "
-             "cured silicone is a flexible negative stamp/mold you cast into"),
-            ('STAMP', "Stamp from SVG / Text",
-             "Make a real silicone INK STAMP from artwork: the design (an SVG "
-             "file, or the selected Text/Curve object) is engraved into the pan "
-             "floor. Pour silicone, cure, peel: the slab carries the design "
-             "raised and mirrored, so stamped imprints read correctly - glue it "
-             "to an acrylic block"),
-            ('FRAME', "Frame only (real object)",
-             "Print just the open box at the object's footprint — drop your REAL "
-             "object in and pour silicone around it"),
+            ('EMBED', "Insertar → sello de silicona",
+             "Fusiona el objeto en el fondo de la bandeja y vierte SILICONA encima. La "
+             "silicona curada es un sello/molde negativo flexible en el que colas"),
+            ('STAMP', "Sello desde SVG / Texto",
+             "Crea un SELLO de tinta de silicona real desde un diseño: el arte (un "
+             "archivo SVG, o el objeto Texto/Curva seleccionado) se graba en el fondo "
+             "de la bandeja. Vierte silicona, cura, despega: la placa lleva el diseño "
+             "en relieve y en espejo, así las impresiones del sello se leen "
+             "correctamente - pégala a un bloque acrílico"),
+            ('FRAME', "Solo marco (objeto real)",
+             "Imprime solo la caja abierta en la huella del objeto — coloca tu objeto "
+             "REAL dentro y vierte silicona alrededor"),
         ],
         default='EMBED',
     )
     tray_up: EnumProperty(
-        name="Capture Face",
-        description="Which way the object's detailed face points — the open pour side",
+        name="Cara de captura",
+        description="Hacia dónde apunta la cara detallada del objeto — el lado abierto "
+                    "de vertido",
         items=[
-            ('AUTO', "Auto", "Lay the object on its flattest side, detail facing up"),
-            ('Z', "+Z up", "The object's +Z face is the detail / pour side"),
-            ('X', "+X up", "The object's +X face is the detail / pour side"),
-            ('Y', "+Y up", "The object's +Y face is the detail / pour side"),
+            ('AUTO', "Auto", "Recuesta el objeto en su lado más plano, con el detalle "
+             "hacia arriba"),
+            ('Z', "+Z arriba", "La cara +Z del objeto es el lado de detalle / vertido"),
+            ('X', "+X arriba", "La cara +X del objeto es el lado de detalle / vertido"),
+            ('Y', "+Y arriba", "La cara +Y del objeto es el lado de detalle / vertido"),
         ],
         default='AUTO',
     )
     tray_outline: EnumProperty(
-        name="Outline",
-        description="Shape of the tray around the object",
+        name="Contorno",
+        description="Forma de la bandeja alrededor del objeto",
         items=[
-            ('RECT', "Rectangular", "A rectangular pan around the object's footprint "
-             "— simplest and strongest"),
-            ('HUG', "Hug (rounded)", "Walls follow the object's outline with rounded "
-             "corners — uses less silicone and plastic, especially for round or "
-             "irregular shapes"),
+            ('RECT', "Rectangular", "Una bandeja rectangular alrededor de la huella del "
+             "objeto — la más simple y resistente"),
+            ('HUG', "Ajustada (redondeada)", "Las paredes siguen el contorno del objeto "
+             "con esquinas redondeadas — usa menos silicona y plástico, sobre todo en "
+             "formas redondas o irregulares"),
         ],
         default='RECT',
     )
-    tray_wall: _dist("Pan Wall", 2.5,
-                     "Thickness of the printed tray walls", mn=0.4, soft=8.0)
-    tray_floor: _dist("Pan Floor", 3.0,
-                      "Thickness of the printed tray floor", mn=0.4, soft=15.0)
-    tray_margin: _dist("Border", 6.0,
-                       "Gap between the object and the tray wall — the silicone "
-                       "border around your object", mn=0.0, soft=30.0)
-    tray_depth: _dist("Pour Depth", 5.0,
-                      "How much silicone stands above the object's high point "
-                      "(the slab thickness)", mn=0.0, soft=40.0)
+    tray_wall: _dist("Pared de la bandeja", 2.5,
+                     "Grosor de las paredes de la bandeja impresa", mn=0.4, soft=8.0)
+    tray_floor: _dist("Fondo de la bandeja", 3.0,
+                      "Grosor del fondo de la bandeja impresa", mn=0.4, soft=15.0)
+    tray_margin: _dist("Borde", 6.0,
+                       "Espacio entre el objeto y la pared de la bandeja — el borde de "
+                       "silicona alrededor de tu objeto", mn=0.0, soft=30.0)
+    tray_depth: _dist("Profundidad de vertido", 5.0,
+                      "Cuánta silicona queda sobre el punto más alto del objeto "
+                      "(el grosor de la placa)", mn=0.0, soft=40.0)
 
     # --- Sizes (absolute, scene units / mm) ----------------------------- #
-    wall_thickness: _dist("Silicone / Wall Thickness", 3.0,
-                          "Silicone thickness (pour gap / glove skin, or the "
-                          "direct mold's wall)", mn=0.1)
-    shell_wall: _dist("Printed Shell Wall", 2.0,
-                      "Thickness of the printed pour-jacket wall", mn=0.4)
-    sprue_radius: _dist("Throat Radius", 4.0,
-                        "Radius of the funnel's narrow BOTTOM — the hole where it "
-                        "enters the mold. The mouth (top) is this x Mouth Flare. "
-                        "Typing more than the mold can take snaps to the maximum "
-                        "that fits — unless Oversized Throat is on, which uses "
-                        "exactly what you type. The panel shows the funnel being built",
+    wall_thickness: _dist("Grosor de silicona / pared", 3.0,
+                          "Grosor de silicona (espacio de vertido / piel de guante, o "
+                          "la pared del molde directo)", mn=0.1)
+    shell_wall: _dist("Pared de la carcasa impresa", 2.0,
+                      "Grosor de la pared de la carcasa de vertido impresa", mn=0.4)
+    sprue_radius: _dist("Radio de garganta", 6.08,
+                        "Radio de la parte estrecha (BASE) del embudo — el agujero por "
+                        "donde entra al molde. La boca (arriba) es este valor x Apertura "
+                        "de boca. Si escribes más de lo que el molde admite, se ajusta "
+                        "al máximo que cabe — salvo que Garganta sobredimensionada esté "
+                        "activa, que usa exactamente lo que escribes. El panel muestra "
+                        "el embudo que se construye",
                         mn=0.3, soft=60.0, update=_clamp_sprue_radius)
     big_throat: BoolProperty(
-        name="Oversized Throat",
-        description="Fully manual throat: use EXACTLY the typed Throat Radius, with "
-                    "no auto-fit cap at all (normally it's capped at ≈30% of the mold "
-                    "half-width). A very wide throat leaves little shell around the "
-                    "hole — the panel warns, and you own the result",
+        name="Garganta sobredimensionada",
+        description="Garganta totalmente manual: usa EXACTAMENTE el Radio de garganta "
+                    "escrito, sin ningún límite de ajuste automático (normalmente se "
+                    "limita a ≈30 % del semiancho del molde). Una garganta muy ancha "
+                    "deja poca carcasa alrededor del agujero — el panel advierte, y el "
+                    "resultado es tuyo",
         default=False,
         update=_clamp_sprue_radius,
     )
-    funnel_height: _dist("Funnel Height", 12.0,
-                         "How far the pour funnel stands proud of the mold top",
+    funnel_height: _dist("Altura del embudo", 12.0,
+                         "Cuánto sobresale el embudo de vertido por encima de la parte "
+                         "superior del molde",
                          mn=1.0, soft=60.0)
 
     # --- Base ----------------------------------------------------------- #
     base_style: EnumProperty(
-        name="Bottom",
-        description="How the bottom of the mold is finished — the three genuinely "
-                    "different functions",
+        name="Base",
+        description="Cómo se remata la base del molde — las tres funciones realmente "
+                    "distintas",
         items=[
-            ('FLAT', "Flat (closed)",
-             "Flat closed floor the mold stands on (add a Mounting Flange to "
-             "bolt it to a board)"),
-            ('OPEN', "Open Bottom",
-             "Open at the master's base — the master sits on the build plate and "
-             "you pour from the top (add a Detachable Key Plate for a separate "
-             "keyed bottom)"),
-            ('FOLLOW', "Follow Model",
-             "The bottom follows the model's shape (no flat cut)"),
-            ('LOCK', "Locking Base",
-             "(Pour Box) Unite a sawtooth base plinth into the high-poly positive; the "
-             "printed shells get a matching socket that hugs the plinth with a tolerance "
-             "fit, so they lock onto the base and can't slip. Bottom prints open"),
+            ('FLAT', "Plana (cerrada)",
+             "Piso plano cerrado sobre el que se apoya el molde (añade una Brida de "
+             "montaje para atornillarlo a una tabla)"),
+            ('OPEN', "Base abierta",
+             "Abierta en la base del máster — el máster se apoya en la placa de "
+             "impresión y viertes desde arriba (añade una Placa de llave desmontable "
+             "para una base con llave separada)"),
+            ('FOLLOW', "Sigue el modelo",
+             "La base sigue la forma del modelo (sin corte plano)"),
+            ('LOCK', "Base de anclaje",
+             "(Caja de vertido) Fusiona un zócalo base de dientes de sierra en el "
+             "positivo de alta resolución; las carcasas impresas reciben un hueco a "
+             "juego que abraza el zócalo con tolerancia de ajuste, de modo que se "
+             "anclan a la base y no resbalan. La base se imprime abierta"),
         ],
-        default='FLAT',
+        default='LOCK',
     )
     base_flange: BoolProperty(
-        name="Mounting Flange",
-        description="Add an outward bolted skirt around the flat base — clamps "
-                    "the mold down to a board",
+        name="Brida de montaje",
+        description="Añade un faldón atornillable hacia afuera alrededor de la base "
+                    "plana — sujeta el molde a una tabla",
         default=True,
     )
     base_plate: BoolProperty(
-        name="Detachable Key Plate",
-        description="Close the open bottom with a separate printed plate: the "
-                    "model registers into a pocket, and a ring tongue on the "
-                    "shell's rim drops into a groove around the plate's chin "
-                    "collar — self-aligning all round and a seal for the pour",
+        name="Placa de llave desmontable",
+        description="Cierra la base abierta con una placa impresa separada: el modelo "
+                    "se registra en una cavidad, y una lengüeta anular en el borde de "
+                    "la carcasa cae en una ranura alrededor del cuello de la placa — "
+                    "se autoalinea en todo el perímetro y sella el vertido",
         default=False,
     )
     suction_cup: BoolProperty(
-        name="Suction Cup Former",
-        description="Also print a suction-cup former (MF_Mold_Cup): a smooth high-poly "
-                    "dome on a plate with four legs that seat over the open bottom "
-                    "(Open Bottom or Locking Base - the former follows the base's "
-                    "actual height and socket width), tabs hugging the outer wall. "
-                    "Cast with the mold inverted, fill, press the former in - the "
-                    "material cures around the dome, leaving a suction-cup bell in "
-                    "the cast's base. Pop the former out after cure",
+        name="Formador de ventosa",
+        description="También imprime un formador de ventosa (MF_Mold_Cup): una cúpula "
+                    "lisa de alta resolución sobre una placa con cuatro patas que se "
+                    "asientan sobre la base abierta (Base abierta o Base de anclaje - "
+                    "el formador sigue la altura y el ancho reales de la base), con "
+                    "pestañas que abrazan la pared exterior. Colada con el molde "
+                    "invertido: llena, presiona el formador - el material cura alrededor "
+                    "de la cúpula y deja una campana de ventosa en la base de la pieza. "
+                    "Retira el formador tras el curado",
         default=False,
     )
-    cup_diameter: _dist("Cup Diameter", 0.0,
-                        "Dome diameter of the suction-cup former. 0 = automatic (about "
-                        "70% of the model's base opening). An explicit size is used as "
-                        "typed - it may be wider than the cast opening (the bell then "
-                        "truncates at the opening) and is capped only by what fits in "
-                        "through the shells' bottom. On a Locking Base that limit is "
-                        "the sawtooth socket: raise Base Margin for a wider bell",
+    cup_diameter: _dist("Diámetro de la ventosa", 0.0,
+                        "Diámetro de la cúpula del formador de ventosa. 0 = automático "
+                        "(aprox. 70 % de la abertura de la base del modelo). Un tamaño "
+                        "explícito se usa tal cual - puede ser más ancho que la abertura "
+                        "de la pieza (la campana se trunca en la abertura) y solo se "
+                        "limita a lo que cabe por la base de las carcasas. Con Base de "
+                        "anclaje ese límite es el hueco de dientes: sube Margen de base "
+                        "para una campana más ancha",
                         mn=0.0, soft=120.0)
-    cup_depth: _dist("Cup Depth", 8.0,
-                     "How deep the former's dome presses into the pour - the bell "
-                     "depth of the finished suction cup", mn=1.0, soft=30.0)
+    cup_depth: _dist("Profundidad de la ventosa", 8.0,
+                     "Cuán profundo presiona la cúpula del formador en el vertido - la "
+                     "profundidad de la campana de la ventosa terminada", mn=1.0, soft=30.0)
     cup_lock: EnumProperty(
-        name="Fastening",
-        description="How the former locks down onto the shells - the pour FLOATS it "
-                    "(buoyancy), so it must be held",
+        name="Fijación",
+        description="Cómo se fija el formador a las carcasas - el vertido lo HACE "
+                    "FLOTAR (flotabilidad), así que hay que sujetarlo",
         items=[
-            ('PIN', "Pin-Lock (resin-safe)",
-             "No flex needed at all: the former slides on freely, then a ~2 mm pin "
-             "(bamboo skewer, 1.75 mm filament, nail) slides through each hook's "
-             "channel into the shell groove - pure shear, safe for brittle resin"),
-            ('SNAP', "Snap-Lock (flexible filament)",
-             "Printed beads click into grooves in the shells - quick and tool-free, "
-             "for filaments that flex (PLA/PETG/ABS). NOT for brittle resin"),
-            ('BAND', "Band Cleats",
-             "Lips on the hooks catch rubber bands stretched over the former - "
-             "nothing is cut into the shells at all"),
+            ('PIN', "Anclaje con pasador (seguro para resina)",
+             "No requiere flexión: el formador se desliza libre, luego un pasador de "
+             "~2 mm (palillo, filamento de 1.75 mm, clavo) atraviesa el canal de cada "
+             "gancho hacia la ranura de la carcasa - corte puro, seguro para resina "
+             "frágil"),
+            ('SNAP', "Anclaje a presión (filamento flexible)",
+             "Perlas impresas encajan con un clic en ranuras de las carcasas - rápido "
+             "y sin herramientas, para filamentos flexibles (PLA/PETG/ABS). NO para "
+             "resina frágil"),
+            ('BAND', "Bandas elásticas",
+             "Los labios de los ganchos sujetan bandas elásticas tensadas sobre el "
+             "formador - no se corta nada en las carcasas"),
         ],
         default='PIN',
     )
-    fit_clearance: _dist("Fit Clearance", 0.2,
-                         "Gap PER FACE between mating printed parts (the key "
-                         "plate's groove vs the shell's tongue, and the model "
-                         "pocket). Increase if your prints come out too tight to "
-                         "assemble", mn=0.0, soft=1.0)
-    flange_width: _dist("Flange Width", 6.0,
-                        "How far the base flange extends past the mold")
+    fit_clearance: _dist("Holgura de ajuste", 0.2,
+                         "Espacio POR CARA entre las piezas impresas que acoplan (la "
+                         "ranura de la placa de llave vs. la lengüeta de la carcasa, y "
+                         "la cavidad del modelo). Auméntala si tus impresiones quedan "
+                         "demasiado apretadas para ensamblar", mn=0.0, soft=1.0)
+    flange_width: _dist("Ancho de la brida", 6.0,
+                        "Cuánto se extiende la brida de base más allá del molde")
 
     # --- Locking base (sawtooth plinth) --------------------------------- #
-    lock_height: _dist("Base Height", 10.0,
-                       "How tall the sawtooth base plinth is, below the model's base",
+    lock_height: _dist("Altura de la base", 10.0,
+                       "Qué tan alto es el zócalo base de dientes de sierra, debajo de "
+                       "la base del modelo",
                        mn=1.0)
-    lock_margin: _dist("Base Margin", 4.0,
-                       "How far the plinth extends past the model's footprint (a lip)",
+    lock_margin: _dist("Margen de base", 4.0,
+                       "Cuánto se extiende el zócalo más allá de la huella del modelo "
+                       "(un labio)",
                        mn=0.0)
     lock_teeth: IntProperty(
-        name="Sawtooth Teeth",
-        description="Number of sawtooth ridges up the plinth's side (the anti-slip "
-                    "zigzag the shells socket onto)",
+        name="Dientes de sierra",
+        description="Cantidad de crestas de dientes de sierra en el costado del zócalo "
+                    "(el zigzag antideslizante en el que encajan las carcasas)",
         default=3, min=1, max=12,
     )
-    lock_tooth_depth: _dist("Tooth Depth", 2.0,
-                            "How far each sawtooth ridge sticks out", mn=0.2)
-    lock_tolerance: _dist("Lock Tolerance", 0.2,
-                          "Clearance between the printed shell socket and the base, so "
-                          "the shells slide on and lock without binding (per face)",
+    lock_tooth_depth: _dist("Profundidad del diente", 2.0,
+                            "Cuánto sobresale cada cresta de dientes de sierra", mn=0.2)
+    lock_tolerance: _dist("Tolerancia de anclaje", 0.2,
+                          "Holgura entre el hueco de la carcasa impresa y la base, para "
+                          "que las carcasas se deslicen y anclen sin trabarse (por cara)",
                           mn=0.0, soft=1.0)
     lock_unite: BoolProperty(
-        name="Unite Base with Model",
-        description="Join the sawtooth base into the positive so master + base are one "
-                    "piece. Untick to keep the base as a separate MF_Mold_Base part "
-                    "(exported with the shells) and leave your model untouched - e.g. to "
-                    "print the base on its own and attach the master to it",
+        name="Unir base con el modelo",
+        description="Fusiona la base de dientes de sierra en el positivo para que "
+                    "máster + base sean una sola pieza. Desmarca para mantener la base "
+                    "como pieza MF_Mold_Base separada (se exporta con las carcasas) y "
+                    "dejar tu modelo intacto - p. ej. para imprimir la base por "
+                    "separado y fijar el máster a ella",
         default=True,
     )
 
     # --- Clamp wings ---------------------------------------------------- #
     wings: BoolProperty(
-        name="Clamp Wings",
-        description="Add full-height clamp flanges along the parting seam(s), with "
-                    "bolt holes, to clamp the pieces together. They hug the model's "
-                    "profile from top to bottom; with 3+ radial pieces every seam "
-                    "gets a bolted flange pair",
+        name="Alas de sujeción",
+        description="Añade bridas de sujeción de altura completa a lo largo de la(s) "
+                    "línea(s) de partición, con agujeros para pernos, para apretar las "
+                    "piezas entre sí. Abrazan el perfil del modelo de arriba abajo; con "
+                    "3+ piezas radiales cada línea recibe un par de bridas atornilladas",
         default=True,
     )
-    wing_width: _dist("Wing Width", 8.0,
-                      "How far the clamp flanges spread out past the sides")
+    wing_width: _dist("Ancho de las alas", 8.0,
+                      "Cuánto se extienden las bridas de sujeción más allá de los "
+                      "costados")
     wing_keys: EnumProperty(
-        name="Wing Alignment",
-        description="Alignment keys on the wing mating faces: a raised key on one "
-                    "half seats into a matching socket in the other (grown by Fit "
-                    "Clearance), so the bolted halves can't shear. Placed between "
-                    "the bolt holes and sized to the wing lip",
+        name="Alineación de alas",
+        description="Llaves de alineación en las caras de acople de las alas: una "
+                    "llave en relieve en una mitad asienta en un hueco a juego en la "
+                    "otra (crecido por la Holgura de ajuste), para que las mitades "
+                    "atornilladas no se corten lateralmente. Colocadas entre los "
+                    "agujeros de perno y dimensionadas según el labio del ala",
         items=[
-            ('NONE', "None", "No alignment keys on the wings (the bolts alone align)"),
-            ('CONE', "Cone", "Pointed cone pins - self-centering, easiest to seat"),
-            ('DOME', "Half Sphere", "Dome bumps - smooth engage and release"),
-            ('FRUSTUM', "Half Cone", "Truncated cone pads - sturdy, shear-resistant"),
+            ('NONE', "Ninguna", "Sin llaves de alineación en las alas (solo los pernos "
+             "alinean)"),
+            ('CONE', "Cono", "Pasadores cónicos apuntados - se auto-centran, los más "
+             "fáciles de asentar"),
+            ('DOME', "Media esfera", "Resaltes de cúpula - acople y salida suaves"),
+            ('FRUSTUM', "Medio cono", "Plataformas de cono truncado - robustas, "
+             "resistentes al corte"),
         ],
         default='NONE',
     )
-    wing_key_size: _dist("Key Size", 6.0,
-                         "Diameter of the wing alignment keys (their footprint on the "
-                         "wing face)",
+    wing_key_size: _dist("Tamaño de llave", 6.0,
+                         "Diámetro de las llaves de alineación del ala (su huella en la "
+                         "cara del ala)",
                          mn=1.0, soft=20.0)
-    wing_key_height: _dist("Key Height", 0.0,
-                           "How far the keys stand out past the mating face. 0 = "
-                           "automatic: proportional to Key Size but capped by the wing "
-                           "lip so the socket never pierces the wing. Set it higher for "
-                           "taller keys - past the lip the socket punches through the "
-                           "mating wing as a hole (still aligns and prints fine). Half "
-                           "Sphere caps at a full hemisphere so it can always assemble",
+    wing_key_height: _dist("Altura de llave", 0.0,
+                           "Cuánto sobresalen las llaves de la cara de acople. 0 = "
+                           "automático: proporcional al Tamaño de llave pero limitado "
+                           "por el labio del ala para que el hueco nunca perfore el ala. "
+                           "Ponlo más alto para llaves más altas - pasado el labio, el "
+                           "hueco atraviesa el ala de acople como agujero (igual alinea "
+                           "e imprime bien). Media esfera se limita a una semiesfera "
+                           "completa para que siempre pueda ensamblarse",
                            mn=0.0, soft=12.0)
-    wing_key_spacing: _dist("Key Spacing", 40.0,
-                            "Pitch between wing alignment keys along the seam - keys "
-                            "are spread evenly at this distance (a tall mold gets a "
-                            "whole row), dodging the bolt holes",
+    wing_key_spacing: _dist("Separación de llaves", 40.0,
+                            "Distancia entre llaves de alineación del ala a lo largo de "
+                            "la línea de corte - las llaves se reparten uniformemente a "
+                            "esta distancia (un molde alto recibe toda una fila), "
+                            "esquivando los agujeros de perno",
                             mn=5.0, soft=120.0)
-    bolt_diameter: _dist("Bolt Diameter", 3.0,
-                         "Diameter of the clamp/flange bolt holes", mn=0.5)
+    bolt_diameter: _dist("Diámetro de perno", 3.0,
+                         "Diámetro de los agujeros de perno de sujeción/brida", mn=0.5)
     bolt_auto: BoolProperty(
-        name="Auto Bolts",
-        description="Place the clamp bolt holes automatically by flange height; "
-                    "off by default - the wings clamp with clips or bands unless "
-                    "you ask for holes here or set a count per side",
+        name="Pernos automáticos",
+        description="Coloca los agujeros de perno automáticamente según la altura de "
+                    "la brida; desactivado por defecto - las alas se sujetan con clips "
+                    "o bandas salvo que pidas agujeros aquí o fijes una cantidad por "
+                    "lado",
         default=False,
     )
     bolt_count: IntProperty(
-        name="Bolts / Side",
-        description="Exact bolt holes per clamp wing / seam when Auto Bolts is "
-                    "off — 0 means no bolt holes at all",
+        name="Pernos / lado",
+        description="Agujeros de perno exactos por ala de sujeción / línea de corte "
+                    "cuando Pernos automáticos está apagado — 0 significa ningún "
+                    "agujero de perno",
         default=0, min=0, max=10,
     )
 
     # --- Split / keys --------------------------------------------------- #
     split_axis: EnumProperty(
-        name="Split Axis",
-        description="Direction the two halves separate",
+        name="Eje de corte",
+        description="Dirección en que se separan las dos mitades",
         items=[
             ('AUTO', "Auto",
-             "Pick the axis the model releases best along (fewest undercuts), "
-             "falling back to the wider footprint when they're equal"),
-            ('X', "X", "Split left/right"),
-            ('Y', "Y", "Split front/back"),
+             "Elige el eje por el que el modelo se libera mejor (menos socavones), "
+             "recurriendo a la huella más ancha cuando empatan"),
+            ('X', "X", "Corte izquierda/derecha"),
+            ('Y', "Y", "Corte adelante/atrás"),
         ],
         default='AUTO',
     )
@@ -460,84 +484,89 @@ class MoldForgeProperties(bpy.types.PropertyGroup):
         default=False,
     )
     stamp_svg: StringProperty(
-        name="SVG File", subtype='FILE_PATH', default="",
-        description="Artwork for the stamp. Used when no Text/Curve object is "
-                    "selected; shapes must be FILLED paths (convert strokes to "
-                    "paths in Inkscape first)")
+        name="Archivo SVG", subtype='FILE_PATH', default="",
+        description="Arte para el sello. Se usa cuando no hay objeto Texto/Curva "
+                    "seleccionado; las formas deben ser trazos RELLENOS (convierte "
+                    "primero los contornos a trazos en Inkscape)")
     stamp_width: FloatProperty(
-        name="Stamp Width", default=60.0, min=5.0, soft_max=200.0,
-        description="The design is scaled (uniformly) to this width (mm)")
+        name="Ancho del sello", default=60.0, min=5.0, soft_max=200.0,
+        description="El diseño se escala (uniformemente) a este ancho (mm)")
     stamp_relief: FloatProperty(
-        name="Relief Depth", default=2.0, min=0.5, soft_max=5.0,
-        description="How far the design stands proud of the stamp face (mm). "
-                    "1.5-2.5 is the sweet spot: shallower smears ink from the "
-                    "background, deeper makes fine lines floppy")
+        name="Profundidad del relieve", default=2.0, min=0.5, soft_max=5.0,
+        description="Cuánto sobresale el diseño de la cara del sello (mm). "
+                    "1.5-2.5 es el punto ideal: menos profundo emborrona la tinta "
+                    "del fondo, más profundo deja flojas las líneas finas")
     stamp_mirror: BoolProperty(
-        name="Mirror Design", default=False,
-        description="Flip the design left-right. Leave OFF for a normal ink "
-                    "stamp (the pour mirrors it once and stamping mirrors it "
-                    "back, so imprints read correctly). Turn ON only if you "
-                    "want the STAMP FACE itself to read correctly")
+        name="Espejar diseño", default=False,
+        description="Voltea el diseño izquierda-derecha. Déjalo APAGADO para un "
+                    "sello de tinta normal (el vertido lo espeja una vez y el "
+                    "sellado lo espeja de vuelta, así las impresiones se leen "
+                    "correctamente). Actívalo solo si quieres que la CARA del "
+                    "sello se lea correctamente")
     split_offset: FloatProperty(
-        name="Parting Offset", default=0.0,
-        description="Slide the parting plane off-centre along the split axis, in mm "
-                    "(auto-clamped so neither half vanishes)")
+        name="Desplazamiento de partición", default=0.0,
+        description="Desplaza el plano de partición del centro a lo largo del eje de "
+                    "corte, en mm (ajustado automáticamente para que ninguna mitad "
+                    "desaparezca)")
     split_horizontal: BoolProperty(
-        name="Horizontal Split",
-        description="Also split the shell horizontally — for XL molds: each piece "
-                    "prints shorter, and the horizontal seam gets a bolted flange "
-                    "ring all around. Size the holes for your threaded inserts "
-                    "with Bolt Diameter (inserts in the lower lip, screws from "
-                    "the top)",
+        name="Corte horizontal",
+        description="También corta la carcasa horizontalmente — para moldes XL: cada "
+                    "pieza se imprime más corta, y la línea horizontal recibe un anillo "
+                    "de brida atornillado en todo el perímetro. Dimensiona los agujeros "
+                    "para tus insertos roscados con Diámetro de perno (insertos en el "
+                    "labio inferior, tornillos desde arriba)",
         default=False,
     )
     split_z_offset: FloatProperty(
-        name="Seam Height", default=0.0,
-        description="Slide the horizontal seam up/down from mid-height, in mm "
-                    "(auto-clamped so neither stack vanishes)")
+        name="Altura de la línea", default=0.0,
+        description="Desplaza la línea horizontal arriba/abajo desde la mitad de la "
+                    "altura, en mm (ajustado automáticamente para que ninguna pila "
+                    "desaparezca)")
     dual_density: BoolProperty(
-        name="Dual Density (2-pour)", default=False,
-        description="Firm-core / soft-shell casting kit (Locking Base only). "
-                    "Adds Core_Master: your model shrunk INWARD by Soft Wall on a "
-                    "bare + SOCKET CROSS carved from the same sawtooth plinth "
-                    "as the positive - the lips ARE the teeth. Mold it in a "
-                    "SECOND run (that run keeps this mold), cast it FIRM, "
-                    "then pour INVERTED: fill the open base with SOFT and "
-                    "click the core in - the lips clamp in the grooves and "
-                    "excess burps out the open quadrants; the layers bond as "
-                    "they cure")
+        name="Densidad dual (2 vertidos)", default=False,
+        description="Kit de colada núcleo-firme / capa-blanda (solo Base de anclaje). "
+                    "Añade Core_Master: tu modelo reducido HACIA ADENTRO por Pared "
+                    "blanda, sin base + CRUZ DE HUECO tallada del mismo zócalo de "
+                    "dientes que el positivo - los labios SON los dientes. Moldea en "
+                    "una SEGUNDA corrida (esa corrida conserva este molde), coládala "
+                    "FIRME, y luego vierte INVERTIDO: llena la base abierta con BLANDO "
+                    "y encaja el núcleo - los labios se fijan en las ranuras y el "
+                    "exceso sale por los cuadrantes abiertos; las capas se adhieren "
+                    "al curar")
     core_wall: FloatProperty(
-        name="Soft Wall", default=5.0, min=0.5, soft_max=20.0,
-        description="Thickness of the SOFT outer layer (mm). The firm core is "
-                    "the model shrunk INWARD by exactly this much everywhere - "
-                    "a true offset, so the soft layer is even on the inside of "
-                    "a bend, the outside, the top and the flanks alike")
+        name="Pared blanda", default=5.0, min=0.5, soft_max=20.0,
+        description="Grosor de la capa exterior BLANDA (mm). El núcleo firme es "
+                    "el modelo reducido HACIA ADENTRO exactamente este valor en "
+                    "todas partes - un desplazamiento real, así la capa blanda "
+                    "queda pareja por dentro de una curva, por fuera, arriba y "
+                    "en los flancos por igual")
     anchor_plug: BoolProperty(
-        name="Vac-U-Lock Plug", default=False,
-        description="Also print MF_Mold_Plug: the bundled Vac-U-Lock + "
-                    "suction-bell former, ALWAYS at its original size, on its "
-                    "own socket cross (sawtooth lips clamp into the shells' "
-                    "grooves). Cast inverted like the dual core - fill the "
-                    "base, click it in - and the cured toy's "
-                    "base carries the gripping channel inside a suction bell; "
-                    "if the mold is too small for the real plug it is skipped "
-                    "with a note")
+        name="Plug Vac-U-Lock", default=False,
+        description="También imprime MF_Mold_Plug: el formador de Vac-U-Lock + "
+                    "campana de ventosa, SIEMPRE a su tamaño original, en su "
+                    "propia cruz de hueco (los labios de dientes se fijan en las "
+                    "ranuras de las carcasas). Colada invertida como el núcleo "
+                    "dual - llena la base, encaja - y la base del juguete curado "
+                    "lleva el canal de sujeción dentro de una campana de ventosa; "
+                    "si el molde es muy pequeño para el plug real, se omite con "
+                    "una nota")
     printer_fit: BoolProperty(
-        name="Printer Fit",
-        description="Split anything taller than your printer's build height into "
-                    "pieces that fit the plate: shells into bolted stacked levels, "
-                    "the positive into glue-up sections that self-align with "
-                    "printed pegs. Pick your printer or type its height below",
+        name="Ajustar a impresora",
+        description="Divide todo lo que supere la altura de impresión de tu impresora "
+                    "en piezas que quepan en la placa: carcasas en niveles apilados "
+                    "atornillados, el positivo en secciones para encolar que se "
+                    "autoalinean con pasadores impresos. Elige tu impresora o escribe "
+                    "su altura abajo",
         default=False,
     )
     printer_preset: EnumProperty(
-        name="Printer",
-        description="Pick your printer to fill in its build height, or Custom to "
-                    "type it yourself. Double-check the number against your "
-                    "machine - editions vary",
+        name="Impresora",
+        description="Elige tu impresora para rellenar su altura de impresión, o "
+                    "Personalizado para escribirla tú. Verifica el número contra tu "
+                    "máquina - las ediciones varían",
         items=[
-            ('CUSTOM', "Custom", "Type the maximum print height yourself "
-                                 "(0 = Printer Fit off)"),
+            ('CUSTOM', "Personalizado", "Escribe tú la altura máxima de impresión "
+                                  "(0 = Ajustar a impresora apagado)"),
             None,
             ('PHOTON_M7', "Anycubic Photon Mono M7 (230 mm)", "Anycubic Photon Mono M7"),
             ('PHOTON_M7PRO', "Anycubic Photon Mono M7 Pro (230 mm)",
@@ -575,210 +604,230 @@ class MoldForgeProperties(bpy.types.PropertyGroup):
             ('FORM4', "Formlabs Form 4 (210 mm)", "Formlabs Form 4"),
             ('PHENOM_FORGE', "Peopoly Phenom Forge (350 mm)", "Peopoly Phenom Forge"),
             None,
-            ('ENDER3', "Ender-3 family (250 mm)", "Creality Ender-3 / V2 / S1"),
+            ('ENDER3', "Familia Ender-3 (250 mm)", "Creality Ender-3 / V2 / S1"),
             ('PRUSA_MK3S', "Prusa MK3S/MK4 (210 mm)", "Original Prusa i3 MK3S / MK4"),
             ('BAMBU_A1MINI', "Bambu A1 mini (180 mm)", "Bambu Lab A1 mini"),
-            ('BAMBU_X1P1', "Bambu X1/P1 (256 mm)", "Bambu Lab X1 / P1 series"),
+            ('BAMBU_X1P1', "Bambu X1/P1 (256 mm)", "Serie Bambu Lab X1 / P1"),
         ],
         default='CUSTOM',
         update=_apply_printer_preset,
     )
     max_print_height: FloatProperty(
-        name="Max Print Height", default=0.0, min=0.0, soft_max=400.0,
-        description="Printer Fit: your printer's maximum print height in mm "
-                    "(0 = off). Any shell taller than this is cut into stacked "
-                    "levels - each with a bolted seam ring all around - and a "
-                    "too-tall positive into glue-up sections that self-align with "
-                    "printed pegs (nothing on its cast surface), so every piece "
-                    "fits the build plate")
+        name="Altura máx. de impresión", default=0.0, min=0.0, soft_max=400.0,
+        description="Ajustar a impresora: la altura máxima de impresión de tu "
+                    "impresora en mm (0 = apagado). Toda carcasa más alta se corta "
+                    "en niveles apilados - cada uno con un anillo de línea "
+                    "atornillado en todo el perímetro - y un positivo demasiado "
+                    "alto en secciones para encolar que se autoalinean con "
+                    "pasadores impresos (nada sobre su superficie de colada), para "
+                    "que cada pieza quepa en la placa de impresión")
     fit_positive: BoolProperty(
-        name="Cut Positive Too", default=True,
-        description="Printer Fit also cuts a too-tall positive into glue-up "
-                    "sections that self-align: pegs printed on each face seat "
-                    "into sockets in the next (nothing is ever added to its cast "
-                    "surface). Untick to always keep the positive whole - print "
-                    "it tilted or split it yourself")
+        name="Cortar el positivo también", default=True,
+        description="Ajustar a impresora también corta un positivo demasiado alto "
+                    "en secciones que se autoalinean: pasadores impresos en cada "
+                    "cara asientan en huecos de la siguiente (nunca se añade nada "
+                    "a su superficie de colada). Desmarca para mantener siempre el "
+                    "positivo entero - imprímelo inclinado o córtalo tú")
     support_clearance: FloatProperty(
-        name="Support Height", default=5.0, min=0.0, soft_max=20.0,
-        description="Printer Fit: height the slicer's supports/raft lift the "
-                    "print off the plate (resin prints rarely sit flat). This is "
-                    "reserved out of Max Print Height, so every level still fits "
-                    "WITH its supports")
+        name="Altura de soportes", default=5.0, min=0.0, soft_max=20.0,
+        description="Ajustar a impresora: altura con la que los soportes/raft del "
+                    "slicer levantan la impresión de la placa (las impresiones de "
+                    "resina rara vez asientan planas). Se reserva de la Altura máx. "
+                    "de impresión, para que cada nivel siga cabiendo CON sus "
+                    "soportes")
     contoured: BoolProperty(
-        name="Contoured Parting",
-        description="Parting surface follows the model's mid-profile (self-"
-                    "registering) instead of a flat plane; falls back to flat if "
-                    "it can't produce clean halves",
+        name="Partición contorneada",
+        description="La superficie de partición sigue el perfil medio del modelo "
+                    "(se autorregistra) en lugar de un plano plano; recurre a plana "
+                    "si no puede producir mitades limpias",
         default=True,
     )
     key_count: IntProperty(
-        name="Alignment Keys",
-        description="Registration features on the parting face (used with a flat "
-                    "parting + no wings; a contoured parting self-registers)",
+        name="Llaves de alineación",
+        description="Elementos de registro en la cara de partición (usados con "
+                    "partición plana + sin alas; una partición contorneada se "
+                    "autorregistra)",
         default=2, min=0, max=4,
     )
     parts_count: IntProperty(
-        name="Mold Pieces",
-        description="How many pieces the mold splits into. 2 is a normal two-part "
-                    "split; 3-4 splits it into radial wedges around the vertical axis, "
-                    "so a model with undercuts on every side can still release (each "
-                    "wedge pulls straight out)",
+        name="Piezas del molde",
+        description="En cuántas piezas se divide el molde. 2 es un corte normal en "
+                    "dos partes; 3-4 lo divide en cuñas radiales alrededor del eje "
+                    "vertical, para que un modelo con socavones en todos lados "
+                    "pueda liberarse (cada cuña sale recta)",
         default=2, min=2, max=4,
     )
     registration: EnumProperty(
-        name="Registration",
-        description="What the alignment features look like (flat parting)",
+        name="Registro",
+        description="Cómo son los elementos de alineación (partición plana)",
         items=[
-            ('KEYS', "Cone Keys", "Conical pins seating into sockets"),
-            ('TEETH', "Interlocking Teeth", "A castellated row along the seam"),
+            ('KEYS', "Llaves cónicas", "Pasadores cónicos que asientan en huecos"),
+            ('TEETH', "Dientes enclavados", "Una fila almenada a lo largo de la "
+             "línea de corte"),
         ],
         default='KEYS',
     )
 
     # --- Sprue / vents -------------------------------------------------- #
     sprue: BoolProperty(
-        name="Sprue (pour funnel)",
-        description="Cut a funnel from the top into the cavity for pouring",
+        name="Embudo de vertido",
+        description="Talla un embudo desde la parte superior hacia la cavidad para "
+                    "verter",
         default=True,
     )
     sprue_flare: FloatProperty(
-        name="Funnel Flare", default=2.4, min=1.0, max=4.0,
-        description="Mouth width as a multiple of the sprue radius — 1.0 is a "
-                    "straight tube (best when a wide cone won't fit the shape), "
-                    "bigger is a wider catch funnel (auto-capped to the mold)",
+        name="Apertura del embudo", default=2.4, min=1.0, max=4.0,
+        description="Ancho de boca como múltiplo del radio de la garganta — 1.0 es "
+                    "un tubo recto (mejor cuando un cono ancho no cabe en la forma), "
+                    "mayor es un embudo receptor más ancho (limitado automáticamente "
+                    "al molde)",
     )
     big_mouth: BoolProperty(
-        name="Oversized Mouth",
-        description="Fully manual mouth: exactly throat x Mouth Flare, with no "
-                    "auto-fit cap (normally the mouth is capped at ≈45% of the mold "
-                    "half-width and kept on the mold edge). It may then overhang the "
-                    "mold — the panel warns. Use when a wide catch funnel won't "
-                    "otherwise fit the shape",
+        name="Boca sobredimensionada",
+        description="Boca totalmente manual: exactamente garganta x Apertura del "
+                    "embudo, sin límite de ajuste automático (normalmente la boca se "
+                    "limita a ≈45 % del semiancho del molde y se mantiene en el borde "
+                    "del molde). Puede entonces sobresalir del molde — el panel "
+                    "advierte. Úsala cuando un embudo receptor ancho no cabe de otra "
+                    "forma en la forma",
         default=False,
     )
     sprue_count: IntProperty(
-        name="Pour Points",
-        description="Number of pour funnels (more helps fill tall figures)",
+        name="Puntos de vertido",
+        description="Cantidad de embudos de vertido (más ayuda a llenar figuras "
+                    "altas)",
         default=1, min=1, max=4,
     )
     sprue_place: EnumProperty(
-        name="Sprue Placement",
-        description="Where the pour funnel sits on the model",
+        name="Ubicación del embudo",
+        description="Dónde se ubica el embudo de vertido en el modelo",
         items=[
-            ('XY', "Center XY", "Center the funnel on the model's footprint "
-             "(both X and Y) — straight down the middle"),
-            ('X', "Center X", "Center on X; follow the model's highest point along Y"),
-            ('Y', "Center Y", "Center on Y; follow the model's highest point along X"),
-            ('TOP', "Highest Point", "Put the funnel on the model's highest point — "
-             "best venting for tall figures, but off-center on a leaning model"),
-            ('MANUAL', "Manual X/Y", "Type the funnel position yourself as an X/Y "
-             "offset from the model's footprint centre"),
+            ('XY', "Centro XY", "Centra el embudo en la huella del modelo "
+             "(tanto X como Y) — directo al medio"),
+            ('X', "Centro X", "Centra en X; sigue el punto más alto del modelo a lo "
+             "largo de Y"),
+            ('Y', "Centro Y", "Centra en Y; sigue el punto más alto del modelo a lo "
+             "largo de X"),
+            ('TOP', "Punto más alto", "Pone el embudo en el punto más alto del "
+             "modelo — la mejor ventilación para figuras altas, pero descentrado "
+             "en un modelo inclinado"),
+            ('MANUAL', "Manual X/Y", "Escribe tú la posición del embudo como "
+             "desplazamiento X/Y desde el centro de la huella del modelo"),
         ],
         default='TOP',
     )
     sprue_x: FloatProperty(
-        name="Sprue X", default=0.0,
-        description="Manual funnel X offset from the model's footprint centre, in mm "
-                    "(0 = centre); used when Sprue Placement is Manual. Clamped to "
-                    "the footprint so the funnel stays on the model")
+        name="Embudo X", default=0.0,
+        description="Desplazamiento X manual del embudo desde el centro de la huella "
+                    "del modelo, en mm (0 = centro); se usa cuando Ubicación del "
+                    "embudo es Manual. Limitado a la huella para que el embudo quede "
+                    "sobre el modelo")
     sprue_y: FloatProperty(
-        name="Sprue Y", default=0.0,
-        description="Manual funnel Y offset from the model's footprint centre, in mm "
-                    "(0 = centre); used when Sprue Placement is Manual. Clamped to "
-                    "the footprint so the funnel stays on the model")
+        name="Embudo Y", default=0.0,
+        description="Desplazamiento Y manual del embudo desde el centro de la huella "
+                    "del modelo, en mm (0 = centro); se usa cuando Ubicación del "
+                    "embudo es Manual. Limitado a la huella para que el embudo quede "
+                    "sobre el modelo")
     vent_place: EnumProperty(
-        name="Vent Placement",
-        description="Where the air vents go",
+        name="Ubicación de respiraderos",
+        description="Dónde van los respiraderos de aire",
         items=[
-            ('AUTO', "Auto (high points)",
-             "Drill vents at the model's highest points, spaced apart - where "
-             "air actually traps"),
-            ('MARKERS', "Manual (markers)",
-             "Drill ONE vent at every Vent Marker you placed. Snap the 3D "
-             "cursor onto the surface (Shift+Right-Click), press Add Vent "
-             "Marker, then move/duplicate/delete the markers freely"),
+            ('AUTO', "Auto (puntos altos)",
+             "Perfora respiraderos en los puntos más altos del modelo, espaciados - "
+             "donde el aire realmente se atrapa"),
+            ('MARKERS', "Manual (marcadores)",
+             "Perfora UN respiradero en cada Marcador de respiradero colocado. "
+             "Ajusta el cursor 3D a la superficie (Shift+Clic derecho), pulsa "
+             "Añadir marcador de respiradero, y luego mueve/duplica/elimina los "
+             "marcadores libremente"),
         ],
         default='AUTO',
     )
     vent_count: IntProperty(
-        name="Air Vents",
-        description="Thin channels from the cavity's high points to the outside",
-        default=0, min=0, max=8,
+        name="Respiraderos de aire",
+        description="Canales finos desde los puntos altos de la cavidad hacia el "
+                    "exterior",
+        default=1, min=0, max=8,
     )
-    vent_radius: _dist("Vent Radius", 1.0,
-                       "Radius of each air vent channel; typing more than the "
-                       "mold can take snaps back to the maximum that fits",
+    vent_radius: _dist("Radio del respiradero", 1.0,
+                       "Radio de cada canal de respiradero; si escribes más de lo que "
+                       "el molde admite, vuelve al máximo que cabe",
                        mn=0.2, soft=4.0, update=_clamp_vent_radius)
 
     # --- Mesh prep ------------------------------------------------------ #
     heal: BoolProperty(
-        name="Heal Mesh",
-        description="Merge doubles, drop loose geometry and recalculate normals first",
+        name="Reparar malla",
+        description="Primero fusiona duplicados, descarta geometría suelta y "
+                    "recalcula normales",
         default=True,
     )
-    decimate: BoolProperty(name="Decimate", default=False)
-    decimate_ratio: FloatProperty(name="Ratio", default=0.5, min=0.1, max=1.0, subtype='FACTOR')
+    decimate: BoolProperty(name="Decimar", default=False)
+    decimate_ratio: FloatProperty(name="Proporción", default=0.5, min=0.1, max=1.0, subtype='FACTOR')
     voxel_safe: BoolProperty(
-        name="Safe Remesh",
-        description="Voxel-remesh the whole model first — for messy or non-manifold meshes",
-        default=False,
+        name="Remesh seguro",
+        description="Remesh voxel de todo el modelo primero — para mallas "
+                    "desordenadas o no manifold",
+        default=True,
     )
-    voxel_size: _dist("Remesh Voxel", 1.0,
-                      "Voxel size for Safe Remesh (smaller = finer, slower)", mn=0.05)
+    voxel_size: _dist("Vóxel de remesh", 1.0,
+                      "Tamaño de vóxel para Remesh seguro (menor = más fino, más "
+                      "lento)", mn=0.05)
 
     # --- Materials (for the weight estimate) ---------------------------- #
     silicone_preset: EnumProperty(
-        name="Mold Material",
-        description="Pick a common mold material to fill in its density, or Custom "
-                    "to type your own",
+        name="Material del molde",
+        description="Elige un material de molde común para rellenar su densidad, o "
+                    "Personalizado para escribir la tuya",
         items=[
-            ('CUSTOM', "Custom", "Type the density yourself"),
-            ('DRAGONSKIN', "Dragon Skin", "Smooth-On Dragon Skin (platinum) ≈ 1.07"),
-            ('MOLDSTAR', "Mold Star", "Smooth-On Mold Star (platinum) ≈ 1.18"),
-            ('OOMOO', "Oomoo", "Smooth-On Oomoo (tin-cure) ≈ 1.42"),
-            ('ECOFLEX', "Ecoflex", "Smooth-On Ecoflex (soft platinum) ≈ 1.07"),
-            ('MOLDMAX', "Mold Max", "Smooth-On Mold Max (tin-cure) ≈ 1.42"),
-            ('PLATSIL', "Platinum RTV", "Generic platinum-cure RTV ≈ 1.12"),
+            ('CUSTOM', "Personalizado", "Escribe tú la densidad"),
+            ('DRAGONSKIN', "Dragon Skin", "Smooth-On Dragon Skin (platino) ≈ 1.07"),
+            ('MOLDSTAR', "Mold Star", "Smooth-On Mold Star (platino) ≈ 1.18"),
+            ('OOMOO', "Oomoo", "Smooth-On Oomoo (curado por estaño) ≈ 1.42"),
+            ('ECOFLEX', "Ecoflex", "Smooth-On Ecoflex (platino suave) ≈ 1.07"),
+            ('MOLDMAX', "Mold Max", "Smooth-On Mold Max (curado por estaño) ≈ 1.42"),
+            ('PLATSIL', "RTV de platino", "RTV genérico de curado por platino ≈ 1.12"),
         ],
         default='CUSTOM',
         update=_apply_silicone_preset,
     )
     cast_preset: EnumProperty(
-        name="Cast Material",
-        description="Pick a common casting material to fill in its density, or "
-                    "Custom to type your own",
+        name="Material de colada",
+        description="Elige un material de colada común para rellenar su densidad, o "
+                    "Personalizado para escribir la tuya",
         items=[
-            ('CUSTOM', "Custom", "Type the density yourself"),
-            ('SILICONE', "Silicone", "Casting silicone ≈ 1.10 (platinum ~1.07, tin ~1.2)"),
-            ('URETHANE', "Urethane Resin", "Smooth-Cast urethane resin ≈ 1.05"),
-            ('EPOXY', "Epoxy Resin", "Generic epoxy casting resin ≈ 1.15"),
-            ('POLYESTER', "Polyester Resin", "Polyester casting resin ≈ 1.10"),
-            ('PLASTER', "Plaster", "Plaster of Paris / gypsum ≈ 1.80"),
-            ('WAX', "Wax", "Casting / candle wax ≈ 0.90"),
-            ('CONCRETE', "Concrete", "Cement / GFRC ≈ 2.40"),
+            ('CUSTOM', "Personalizado", "Escribe tú la densidad"),
+            ('SILICONE', "Silicona", "Silicona de colada ≈ 1.10 (platino ~1.07, "
+             "estaño ~1.2)"),
+            ('URETHANE', "Resina de uretano", "Resina de uretano Smooth-Cast ≈ 1.05"),
+            ('EPOXY', "Resina epóxica", "Resina epóxica de colada genérica ≈ 1.15"),
+            ('POLYESTER', "Resina de poliéster", "Resina de poliéster de colada ≈ 1.10"),
+            ('PLASTER', "Yeso", "Yeso de París / gypsum ≈ 1.80"),
+            ('WAX', "Cera", "Cera de colada / velas ≈ 0.90"),
+            ('CONCRETE', "Concreto", "Cemento / GFRC ≈ 2.40"),
         ],
         default='CUSTOM',
         update=_apply_cast_preset,
     )
     silicone_density: FloatProperty(
-        name="Silicone g/ml", default=1.15, min=0.1, max=5.0,
-        description="Density of the pour silicone / solid-mold material (RTV "
-                    "silicone ≈ 1.1–1.2)")
+        name="Silicona g/ml", default=1.15, min=0.1, max=5.0,
+        description="Densidad de la silicona de vertido / material del molde sólido "
+                    "(silicona RTV ≈ 1.1–1.2)")
     cast_density: FloatProperty(
-        name="Cast g/ml", default=1.10, min=0.1, max=5.0,
-        description="Density of what you cast (resin ≈ 1.1, plaster ≈ 1.8, wax ≈ 0.9)")
+        name="Colada g/ml", default=1.10, min=0.1, max=5.0,
+        description="Densidad de lo que colas (resina ≈ 1.1, yeso ≈ 1.8, cera ≈ 0.9)")
     plastic_density: FloatProperty(
-        name="Print g/ml", default=1.24, min=0.1, max=5.0,
-        description="Density of the printed plastic (PLA ≈ 1.24, PETG ≈ 1.27)")
+        name="Impresión g/ml", default=1.24, min=0.1, max=5.0,
+        description="Densidad del plástico impreso (PLA ≈ 1.24, PETG ≈ 1.27)")
 
     # --- Export --------------------------------------------------------- #
     export_after: BoolProperty(
-        name="Export after generate", default=False,
-        description="After generating, write every print as STL into the Export "
-                    "Folder: the mold shells, base/former parts and the positive")
-    export_dir: StringProperty(name="Export Folder", subtype='DIR_PATH', default="//")
+        name="Exportar tras generar", default=False,
+        description="Tras generar, escribe cada impresión como STL en la Carpeta de "
+                    "exportación: las carcasas del molde, las piezas de "
+                    "base/formador y el positivo")
+    export_dir: StringProperty(name="Carpeta de exportación", subtype='DIR_PATH', default="//")
 
     # --- Results (read-only display) ------------------------------------ #
-    last_cavity_volume: FloatProperty(name="Cavity Volume", default=0.0)
-    last_silicone_volume: FloatProperty(name="Silicone Volume", default=0.0)
-    last_plastic_volume: FloatProperty(name="Box Plastic Volume", default=0.0)
+    last_cavity_volume: FloatProperty(name="Volumen de la cavidad", default=0.0)
+    last_silicone_volume: FloatProperty(name="Volumen de silicona", default=0.0)
+    last_plastic_volume: FloatProperty(name="Volumen de plástico de la caja", default=0.0)

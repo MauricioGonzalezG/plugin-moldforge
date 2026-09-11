@@ -90,14 +90,14 @@ def _model_status(context, props):
     obj = context.active_object
     if props.box_style == 'TRAY' and getattr(props, "tray_mode", 'EMBED') == 'STAMP':
         if obj is not None and obj.type in ('CURVE', 'FONT'):
-            return True, f"Design: {obj.name}", 'OUTLINER_OB_FONT'
+            return True, f"Diseño: {obj.name}", 'OUTLINER_OB_FONT'
         if props.stamp_svg:
-            return True, f"Design: {os.path.basename(props.stamp_svg)}", 'FILE_IMAGE'
-        return False, "Select a Text / Curve, or pick an SVG below", 'INFO'
+            return True, f"Diseño: {os.path.basename(props.stamp_svg)}", 'FILE_IMAGE'
+        return False, "Selecciona un Texto / Curva, o elige un SVG abajo", 'INFO'
     if obj is None or obj.type != 'MESH':
-        return False, "Select your model in the viewport", 'RESTRICT_SELECT_OFF'
+        return False, "Selecciona tu modelo en el viewport", 'RESTRICT_SELECT_OFF'
     if obj.name.startswith("MF_"):
-        return False, "That is a mold part - select your model", 'ERROR'
+        return False, "Eso es una pieza del molde - selecciona tu modelo", 'ERROR'
     mpu = _mm_per_unit(context)
     d = obj.dimensions
     return (True,
@@ -138,22 +138,22 @@ def _parts_summary(objs, tray=False):
                                                                     "MF_Mold_Base",
                                                                     "MF_Mold_Cup")))
     if tray:
-        bits = ["tray pan"] if shells else []
+        bits = ["bandeja"] if shells else []
     else:
-        bits = [f"{shells} shell{'s' if shells != 1 else ''}"] if shells else []
+        bits = [f"{shells} carcasa{'s' if shells != 1 else ''}"] if shells else []
     if any(n.startswith("MF_Positive") for n in names):
-        bits.append("positive")
+        bits.append("positivo")
     if any(n.startswith("Core_Master") for n in names):
-        bits.append("core")
+        bits.append("núcleo")
     if any(n.startswith("MF_Mold_Base") for n in names):
         bits.append("base")
     if any(n.startswith("MF_Mold_Plug") for n in names):
         bits.append("plug")
     if any(n.startswith("MF_Mold_Cup") for n in names):
-        bits.append("suction cup")
+        bits.append("ventosa")
     if any(n.startswith("MF_Skin") for n in names):
-        bits.append("skin")
-    return " · ".join(bits) if bits else f"{len(objs)} parts"
+        bits.append("piel")
+    return " · ".join(bits) if bits else f"{len(objs)} piezas"
 
 
 # --- header summaries ------------------------------------------------------ #
@@ -163,33 +163,33 @@ def _parts_summary(objs, tray=False):
 
 def summary_shell(props):
     if props.box_style == 'POUR_BOX' and props.skin_keys:
-        skin = " · glove"
+        skin = " · guante"
     else:
         skin = ""
     if props.base_style == 'FLAT':
-        return ("flat +flange" if props.base_flange else "flat") + skin
+        return ("plana +brida" if props.base_flange else "plana") + skin
     if props.base_style == 'OPEN':
         if props.base_plate:
-            return "open +plate" + skin
-        return ("open +cup" if props.suction_cup else "open bottom") + skin
+            return "abierta +placa" + skin
+        return ("abierta +ventosa" if props.suction_cup else "base abierta") + skin
     if props.base_style == 'FOLLOW':
-        return "follows model" + skin
+        return "sigue el modelo" + skin
     if props.box_style != 'POUR_BOX':
-        return "not for this type"
-    out = "locking base" + (" · united" if props.lock_unite else " · separate")
+        return "no aplica a este tipo"
+    out = "base de anclaje" + (" · unida" if props.lock_unite else " · separada")
     if props.dual_density:
-        out = "locking · dual core"
+        out = "anclaje · núcleo dual"
     return out
 
 
 def summary_parting(props):
     if props.parts_count >= 3:
-        out = f"{props.parts_count} wedges"
+        out = f"{props.parts_count} cuñas"
     else:
-        out = "2 pieces · " + ("contoured" if props.contoured
-                               else f"{props.key_count} keys")
+        out = "2 piezas · " + ("contorneada" if props.contoured
+                               else f"{props.key_count} llaves")
     if props.split_horizontal:
-        out += " · h-seam"
+        out += " · línea-h"
     return out
 
 
@@ -197,23 +197,23 @@ def summary_wings(props):
     if not props.wings:
         return "off"
     if props.wing_keys != 'NONE':
-        return props.wing_keys.lower() + " keys"
+        return props.wing_keys.lower() + " llaves"
     return f"{props.wing_width:g} mm"
 
 
 def summary_pour(props):
     """Short: it sits beside the longest group title, "Funnel & Vents"."""
     if props.sprue:
-        out = {'TOP': "top", 'XY': "centre", 'X': "centre x", 'Y': "centre y",
+        out = {'TOP': "punto alto", 'XY': "centro", 'X': "centro x", 'Y': "centro y",
                'MANUAL': "manual"}.get(props.sprue_place, props.sprue_place.lower())
         if props.big_throat or props.big_mouth:
-            out += " · big"
+            out += " · grande"
     else:
-        out = "no funnel"
+        out = "sin embudo"
     if props.vent_place == 'MARKERS':
-        return out + " · markers"
+        return out + " · marcadores"
     if props.vent_count > 0:
-        return out + f" · {props.vent_count} vents"
+        return out + f" · {props.vent_count} respiraderos"
     return out
 
 
@@ -221,13 +221,13 @@ def summary_printer(props):
     if not props.printer_fit:
         return "off"
     if props.max_print_height <= 0:
-        return "pick a printer"
-    return f"max {props.max_print_height:.0f} mm"
+        return "elige una impresora"
+    return f"máx {props.max_print_height:.0f} mm"
 
 
 def summary_export(props, mpu):
     if props.last_silicone_volume <= 0.0:
-        return "generate first"
+        return "genera primero"
     ml = props.last_silicone_volume * (mpu ** 3) / 1000.0
     return f"{ml:,.0f} ml · {ml * props.silicone_density:,.0f} g"
 
@@ -258,23 +258,23 @@ class MOLDFORGE_PT_main(_MFPanel, bpy.types.Panel):
         layout.label(text=text, icon=icon)
 
         col = layout.column()
-        _field(col, "Mold type").prop(props, "box_style", text="")
+        _field(col, "Tipo de molde").prop(props, "box_style", text="")
         if props.box_style == 'SOLID':
-            _field(col, "Shape").prop(props, "solid_shape", expand=True)
+            _field(col, "Forma").prop(props, "solid_shape", expand=True)
         if tray:
-            _field(col, "Mode").prop(props, "tray_mode", text="")
+            _field(col, "Modo").prop(props, "tray_mode", text="")
             self._tray(layout, props, context)
             self._generate(layout, context, ok)
             return
 
-        _field(col, "Bottom").prop(props, "base_style", text="")
+        _field(col, "Base").prop(props, "base_style", text="")
         if props.base_style == 'LOCK' and not pour:
-            layout.label(text="Locking Base is for the Silicone Pour Box",
+            layout.label(text="La Base de anclaje es para la Caja de vertido de silicona",
                          icon='ERROR')
         obj = context.active_object
         if (props.base_style == 'LOCK' and obj is not None
                 and obj.name.startswith("Core_Master")):
-            layout.label(text="Core_Master has its cross - use Bottom: Flat",
+            layout.label(text="Core_Master ya tiene su cruz - usa Base: Plana",
                          icon='INFO')
 
         # --- sizes ----------------------------------------------------- #
@@ -282,55 +282,55 @@ class MOLDFORGE_PT_main(_MFPanel, bpy.types.Panel):
         head.active = False
         mpu = _mm_per_unit(context)
         if abs(mpu - 1.0) < 1e-9:
-            head.label(text="Sizes in mm")
+            head.label(text="Medidas en mm")
         else:
-            head.label(text=f"Sizes in mm  (1 unit = {mpu:g} mm)")
+            head.label(text=f"Medidas en mm  (1 unidad = {mpu:g} mm)")
         col = layout.column(align=True)
-        _field(col, "Silicone thickness" if pour else "Wall thickness").prop(
+        _field(col, "Grosor de silicona" if pour else "Grosor de pared").prop(
             props, "wall_thickness", text="")
         if pour:
-            _field(col, "Shell wall").prop(props, "shell_wall", text="")
+            _field(col, "Pared de carcasa").prop(props, "shell_wall", text="")
         if props.sprue:
-            row = _field(col, "Throat radius")
+            row = _field(col, "Radio de garganta")
             row.prop(props, "sprue_radius", text="")
             row.prop(props, "big_throat", text="", icon='FULLSCREEN_ENTER',
                      toggle=True)
         if props.parts_count == 2:
             # No text="" here: on an expanded enum that blanks the buttons.
-            _field(col, "Split").prop(props, "split_axis", expand=True)
+            _field(col, "Corte").prop(props, "split_axis", expand=True)
         else:
-            _field(col, "Pieces").prop(props, "parts_count", text="")
+            _field(col, "Piezas").prop(props, "parts_count", text="")
         if props.sprue:
             flags = _funnel_flags(props, mold_caps(context))
             if flags and (flags[2] or flags[3]):
                 # Two short lines: a long label is clipped in the middle with "...".
                 neck, mouth, over, _fit = flags
                 note = layout.column(align=True)
-                note.label(text=f"Built: throat Ø{2 * neck:.0f}, mouth Ø{2 * mouth:.0f}",
+                note.label(text=f"Se construye: garganta Ø{2 * neck:.0f}, boca Ø{2 * mouth:.0f}",
                            icon='ERROR' if over else 'INFO')
                 sub = note.row()
                 sub.active = False
-                sub.label(text="Oversized - check the shell" if over
-                          else "Auto-fitted to this mold", icon='BLANK1')
+                sub.label(text="Sobredimensionado - revisa la carcasa" if over
+                          else "Ajustado automáticamente a este molde", icon='BLANK1')
 
         # --- what to add ----------------------------------------------- #
         head = layout.row()
         head.active = False
-        head.label(text="Add")
+        head.label(text="Añadir")
         tog = layout.column(align=True)
-        tog.prop(props, "wings", text="Clamp wings")
-        tog.prop(props, "sprue", text="Pour funnel on top")
+        tog.prop(props, "wings", text="Alas de sujeción")
+        tog.prop(props, "sprue", text="Embudo de vertido arriba")
         if pour and props.base_style == 'FLAT':
             tog.prop(props, "seat_floor", text="Asentar modelo en el piso")
         if lock:
-            tog.prop(props, "dual_density", text="Dual-density core (2-pour)")
+            tog.prop(props, "dual_density", text="Núcleo de densidad dual (2 vertidos)")
             if props.dual_density:
-                _field(layout.column(), "Soft Wall").prop(props, "core_wall", text="")
+                _field(layout.column(), "Pared blanda").prop(props, "core_wall", text="")
                 tog = layout.column(align=True)
-            tog.prop(props, "anchor_plug", text="Vac-U-Lock plug")
-        tog.prop(props, "printer_fit", text="Cut to fit my printer")
+            tog.prop(props, "anchor_plug", text="Plug Vac-U-Lock")
+        tog.prop(props, "printer_fit", text="Cortar para mi impresora")
         if props.printer_fit and props.max_print_height <= 0:
-            _field(layout.column(), "Printer").prop(props, "printer_preset", text="")
+            _field(layout.column(), "Impresora").prop(props, "printer_preset", text="")
 
         self._generate(layout, context, ok)
 
@@ -341,21 +341,21 @@ class MOLDFORGE_PT_main(_MFPanel, bpy.types.Panel):
         if props.tray_mode == 'STAMP':
             obj = context.active_object
             if obj is None or obj.type not in ('CURVE', 'FONT'):
-                _field(col, "SVG file").prop(props, "stamp_svg", text="")
-            _field(col, "Stamp width").prop(props, "stamp_width", text="")
-            _field(col, "Relief depth").prop(props, "stamp_relief", text="")
-            _field(col, "Border").prop(props, "tray_margin", text="")
-            _field(col, "Slab").prop(props, "tray_depth", text="")
-            _field(col, "Pan wall").prop(props, "tray_wall", text="")
-            _field(col, "Pan floor").prop(props, "tray_floor", text="")
-            layout.prop(props, "stamp_mirror", text="Mirror the design")
+                _field(col, "Archivo SVG").prop(props, "stamp_svg", text="")
+            _field(col, "Ancho del sello").prop(props, "stamp_width", text="")
+            _field(col, "Prof. del relieve").prop(props, "stamp_relief", text="")
+            _field(col, "Borde").prop(props, "tray_margin", text="")
+            _field(col, "Placa").prop(props, "tray_depth", text="")
+            _field(col, "Pared bandeja").prop(props, "tray_wall", text="")
+            _field(col, "Fondo bandeja").prop(props, "tray_floor", text="")
+            layout.prop(props, "stamp_mirror", text="Espejar el diseño")
         else:
-            _field(col, "Detail side").prop(props, "tray_up", text="")
-            _field(col, "Outline").prop(props, "tray_outline", text="")
-            _field(col, "Border").prop(props, "tray_margin", text="")
-            _field(col, "Pour depth").prop(props, "tray_depth", text="")
-            _field(col, "Pan wall").prop(props, "tray_wall", text="")
-            _field(col, "Pan floor").prop(props, "tray_floor", text="")
+            _field(col, "Lado del detalle").prop(props, "tray_up", text="")
+            _field(col, "Contorno").prop(props, "tray_outline", text="")
+            _field(col, "Borde").prop(props, "tray_margin", text="")
+            _field(col, "Prof. de vertido").prop(props, "tray_depth", text="")
+            _field(col, "Pared bandeja").prop(props, "tray_wall", text="")
+            _field(col, "Fondo bandeja").prop(props, "tray_floor", text="")
 
     @staticmethod
     def _generate(layout, context, ok):
@@ -373,7 +373,7 @@ class MOLDFORGE_PT_main(_MFPanel, bpy.types.Panel):
 # --- 2. Result: after a build ----------------------------------------------- #
 
 class MOLDFORGE_PT_result(_MFPanel, bpy.types.Panel):
-    bl_label = "Result"
+    bl_label = "Resultado"
     bl_idname = "MOLDFORGE_PT_result"
     bl_order = 5
 
@@ -392,39 +392,39 @@ class MOLDFORGE_PT_result(_MFPanel, bpy.types.Panel):
 
         col = layout.column(align=True)
         if tray:
-            _vol_row(col, "Silicone to pour", props.last_silicone_volume,
+            _vol_row(col, "Silicona a verter", props.last_silicone_volume,
                      props.silicone_density, mpu)
-            _vol_row(col, "Pan plastic", props.last_plastic_volume,
+            _vol_row(col, "Plástico de la bandeja", props.last_plastic_volume,
                      props.plastic_density, mpu)
             if props.tray_mode != 'FRAME':    # cast volume unknown for a real object
-                _vol_row(col, "Cast material", props.last_cavity_volume,
+                _vol_row(col, "Material de colada", props.last_cavity_volume,
                          props.cast_density, mpu)
         elif props.box_style == 'POUR_BOX':
-            _vol_row(col, "Silicone skin" if props.skin_keys else "Silicone to pour",
+            _vol_row(col, "Piel de silicona" if props.skin_keys else "Silicona a verter",
                      props.last_silicone_volume, props.silicone_density, mpu)
-            _vol_row(col, "Box plastic", props.last_plastic_volume,
+            _vol_row(col, "Plástico de la caja", props.last_plastic_volume,
                      props.plastic_density, mpu)
-            _vol_row(col, "Cast material", props.last_cavity_volume,
+            _vol_row(col, "Material de colada", props.last_cavity_volume,
                      props.cast_density, mpu)
         else:
-            _vol_row(col, "Mold material", props.last_silicone_volume,
+            _vol_row(col, "Material del molde", props.last_silicone_volume,
                      props.silicone_density, mpu)
-            _vol_row(col, "Cast material", props.last_cavity_volume,
+            _vol_row(col, "Material de colada", props.last_cavity_volume,
                      props.cast_density, mpu)
 
         exploded = any("mf_explode" in o for o in objs)
         row = layout.row(align=True)
         row.scale_y = 1.2
         row.operator("moldforge.explode",
-                     text="Reassemble" if exploded else "Exploded Preview",
+                     text="Reensamblar" if exploded else "Vista explosionada",
                      icon='STICKY_UVS_DISABLE' if exploded else 'MOD_EXPLODE')
-        row.operator("moldforge.export", text="Export STL...", icon='FILE_TICK')
+        row.operator("moldforge.export", text="Exportar STL...", icon='FILE_TICK')
 
 
 # --- 3. Advanced: everything else, by part of the mold ----------------------- #
 
 class MOLDFORGE_PT_advanced(_MFPanel, bpy.types.Panel):
-    bl_label = "Advanced"
+    bl_label = "Avanzado"
     bl_idname = "MOLDFORGE_PT_advanced"
     bl_options = {'DEFAULT_CLOSED'}
     bl_order = 10
@@ -432,7 +432,7 @@ class MOLDFORGE_PT_advanced(_MFPanel, bpy.types.Panel):
     def draw(self, context):
         row = self.layout.row()
         row.active = False
-        row.label(text="Fine-tune each part of the mold", icon='PREFERENCES')
+        row.label(text="Ajusta cada parte del molde", icon='PREFERENCES')
 
 
 class _MFSub(_MFPanel):
@@ -458,7 +458,7 @@ class _MFSub(_MFPanel):
 
 
 class MOLDFORGE_PT_shell(_MFSub, bpy.types.Panel):
-    bl_label = "Shell & Base"
+    bl_label = "Carcasa y Base"
     bl_idname = "MOLDFORGE_PT_shell"
     bl_order = 10
 
@@ -474,49 +474,49 @@ class MOLDFORGE_PT_shell(_MFSub, bpy.types.Panel):
         props = context.scene.moldforge
 
         if props.box_style == 'POUR_BOX':
-            layout.prop(props, "skin_keys", text="Glove skin keys")
+            layout.prop(props, "skin_keys", text="Llaves de piel de guante")
 
         if props.base_style == 'FLAT':
-            layout.prop(props, "base_flange", text="Mounting flange")
+            layout.prop(props, "base_flange", text="Brida de montaje")
             if props.base_flange:
-                layout.prop(props, "flange_width", text="Flange width")
+                layout.prop(props, "flange_width", text="Ancho de brida")
         elif props.base_style == 'OPEN':
-            layout.prop(props, "base_plate", text="Key plate")
+            layout.prop(props, "base_plate", text="Placa de llave")
             if props.base_plate:
-                layout.prop(props, "fit_clearance", text="Clearance")
+                layout.prop(props, "fit_clearance", text="Holgura")
             else:
                 self._cup(layout, props)
         elif props.base_style == 'LOCK' and props.box_style == 'POUR_BOX':
             col = layout.column(align=True)
-            col.prop(props, "lock_height", text="Base height")
-            col.prop(props, "lock_margin", text="Margin")
-            col.prop(props, "lock_teeth", text="Teeth")
-            col.prop(props, "lock_tooth_depth", text="Tooth depth")
-            col.prop(props, "lock_tolerance", text="Tolerance")
-            layout.prop(props, "lock_unite", text="Unite with model")
+            col.prop(props, "lock_height", text="Altura de la base")
+            col.prop(props, "lock_margin", text="Margen")
+            col.prop(props, "lock_teeth", text="Dientes")
+            col.prop(props, "lock_tooth_depth", text="Prof. del diente")
+            col.prop(props, "lock_tolerance", text="Tolerancia")
+            layout.prop(props, "lock_unite", text="Unir con el modelo")
             if not props.lock_unite:
-                layout.label(text="Base comes out as MF_Mold_Base", icon='INFO')
+                layout.label(text="La base sale como MF_Mold_Base", icon='INFO')
             self._cup(layout, props)
             if props.dual_density:
                 box = layout.box()
-                box.label(text="Two-pour workflow:", icon='INFO')
-                box.label(text="1. Core_Master + Generate = core mold")
-                box.label(text="2. Cast the core in FIRM silicone")
-                box.label(text="3. Flip this mold, fill with SOFT")
-                box.label(text="4. Press the core in - it locks")
+                box.label(text="Flujo de dos vertidos:", icon='INFO')
+                box.label(text="1. Core_Master + Generar = molde del núcleo")
+                box.label(text="2. Colada el núcleo en silicona FIRME")
+                box.label(text="3. Voltea este molde, llena con BLANDO")
+                box.label(text="4. Presiona el núcleo - se ancla")
 
     @staticmethod
     def _cup(layout, props):
-        layout.prop(props, "suction_cup", text="Suction cup")
+        layout.prop(props, "suction_cup", text="Ventosa")
         if props.suction_cup:
-            layout.prop(props, "cup_diameter", text="Cup Ø")
-            layout.prop(props, "cup_depth", text="Cup depth")
-            layout.prop(props, "cup_lock", text="Fasten")
-            layout.label(text="Fill inverted, press the former in", icon='INFO')
+            layout.prop(props, "cup_diameter", text="Ø ventosa")
+            layout.prop(props, "cup_depth", text="Prof. ventosa")
+            layout.prop(props, "cup_lock", text="Fijación")
+            layout.label(text="Llena invertido, presiona el formador", icon='INFO')
 
 
 class MOLDFORGE_PT_parting(_MFSub, bpy.types.Panel):
-    bl_label = "Parting"
+    bl_label = "Partición"
     bl_idname = "MOLDFORGE_PT_parting"
     bl_order = 20
 
@@ -532,24 +532,24 @@ class MOLDFORGE_PT_parting(_MFSub, bpy.types.Panel):
         props = context.scene.moldforge
         is_block = (props.box_style == 'SOLID' and props.solid_shape == 'BLOCK')
 
-        layout.prop(props, "parts_count", text="Pieces")
+        layout.prop(props, "parts_count", text="Piezas")
         if props.parts_count >= 3:
             if is_block or not props.wings:
-                layout.prop(props, "key_count", text="Seam pins")
+                layout.prop(props, "key_count", text="Pasadores de línea")
         else:
-            layout.prop(props, "split_offset", text="Offset")
-            layout.prop(props, "contoured", text="Contoured")
+            layout.prop(props, "split_offset", text="Desplazamiento")
+            layout.prop(props, "contoured", text="Contorneada")
             if not props.contoured:
-                layout.prop(props, "key_count", text="Keys")
+                layout.prop(props, "key_count", text="Llaves")
                 if props.key_count > 0 and not props.wings:
-                    layout.prop(props, "registration", text="Key type")
-        layout.prop(props, "split_horizontal", text="Horizontal split")
+                    layout.prop(props, "registration", text="Tipo de llave")
+        layout.prop(props, "split_horizontal", text="Corte horizontal")
         if props.split_horizontal:
-            layout.prop(props, "split_z_offset", text="Seam height")
+            layout.prop(props, "split_z_offset", text="Altura de la línea")
 
 
 class MOLDFORGE_PT_wings(_MFSub, bpy.types.Panel):
-    bl_label = "Clamp Wings"
+    bl_label = "Alas de Sujeción"
     bl_idname = "MOLDFORGE_PT_wings"
     bl_order = 30
 
@@ -571,24 +571,24 @@ class MOLDFORGE_PT_wings(_MFSub, bpy.types.Panel):
         layout = self._body()
         props = context.scene.moldforge
         layout.active = props.wings
-        layout.prop(props, "wing_width", text="Width")
+        layout.prop(props, "wing_width", text="Ancho")
         if props.parts_count == 2:
-            layout.prop(props, "wing_keys", text="Alignment")
+            layout.prop(props, "wing_keys", text="Alineación")
             if props.wing_keys != 'NONE':
                 col = layout.column(align=True)
-                col.prop(props, "wing_key_size", text="Key size")
-                col.prop(props, "wing_key_height", text="Key height")
-                col.prop(props, "wing_key_spacing", text="Key spacing")
-                layout.prop(props, "fit_clearance", text="Clearance")
-        layout.prop(props, "bolt_diameter", text="Bolt Ø")
-        layout.prop(props, "bolt_auto", text="Auto bolts")
+                col.prop(props, "wing_key_size", text="Tamaño de llave")
+                col.prop(props, "wing_key_height", text="Altura de llave")
+                col.prop(props, "wing_key_spacing", text="Separación de llaves")
+                layout.prop(props, "fit_clearance", text="Holgura")
+        layout.prop(props, "bolt_diameter", text="Ø perno")
+        layout.prop(props, "bolt_auto", text="Pernos automáticos")
         sub = layout.column()
         sub.active = not props.bolt_auto
-        sub.prop(props, "bolt_count", text="Bolts / side")
+        sub.prop(props, "bolt_count", text="Pernos / lado")
 
 
 class MOLDFORGE_PT_pour(_MFSub, bpy.types.Panel):
-    bl_label = "Funnel & Vents"
+    bl_label = "Embudo y Respiraderos"
     bl_idname = "MOLDFORGE_PT_pour"
     bl_order = 40
 
@@ -609,12 +609,12 @@ class MOLDFORGE_PT_pour(_MFSub, bpy.types.Panel):
 
         col = layout.column()
         col.active = props.sprue
-        col.prop(props, "sprue_radius", text="Throat radius")
-        col.prop(props, "funnel_height", text="Height")
+        col.prop(props, "sprue_radius", text="Radio de garganta")
+        col.prop(props, "funnel_height", text="Altura")
         row = col.row(align=True)
-        row.prop(props, "sprue_flare", text="Mouth flare")
+        row.prop(props, "sprue_flare", text="Apertura de boca")
         row.prop(props, "big_mouth", text="", icon='FULLSCREEN_ENTER', toggle=True)
-        col.prop(props, "sprue_place", text="Placement")
+        col.prop(props, "sprue_place", text="Ubicación")
         if props.sprue_place == 'MANUAL':
             col.prop(props, "sprue_x", text="X")
             col.prop(props, "sprue_y", text="Y")
@@ -622,45 +622,45 @@ class MOLDFORGE_PT_pour(_MFSub, bpy.types.Panel):
         row = col.row(align=True)
         sub = row.row(align=True)
         sub.enabled = npm == 0
-        sub.prop(props, "sprue_count", text="Pour points")
+        sub.prop(props, "sprue_count", text="Puntos de vertido")
         row.operator("moldforge.add_pour_marker", text="", icon='ADD')
         if npm:
-            col.label(text=f"{npm} marker(s) add extra spouts",
+            col.label(text=f"{npm} marcador(es) añaden vertedores extra",
                       icon='EMPTY_SINGLE_ARROW')
         # The truth rows: the funnel that will actually be built.
         flags = _funnel_flags(props, caps)
         if flags:
             neck, mouth, over, fit = flags
             note = col.column(align=True)
-            note.label(text=f"Built: throat Ø{2 * neck:.0f}, mouth Ø{2 * mouth:.0f}",
+            note.label(text=f"Se construye: garganta Ø{2 * neck:.0f}, boca Ø{2 * mouth:.0f}",
                        icon='ERROR' if (over or fit) else 'INFO')
             if over or fit:
                 sub = note.row()
                 sub.active = False
-                sub.label(text="Oversized - check the shell" if over
-                          else "Auto-fitted to this mold", icon='BLANK1')
+                sub.label(text="Sobredimensionado - revisa la carcasa" if over
+                          else "Ajustado automáticamente a este molde", icon='BLANK1')
 
         layout.separator()
-        layout.prop(props, "vent_place", text="Vents")
+        layout.prop(props, "vent_place", text="Respiraderos")
         if props.vent_place == 'MARKERS':
             layout.operator("moldforge.add_vent_marker", icon='ADD')
-            layout.prop(props, "vent_radius", text="Vent radius")
+            layout.prop(props, "vent_radius", text="Radio del respiradero")
             nvm = len(mf_util.marker_points("MF_VentMark"))
             layout.label(
-                text=(f"{nvm} marker(s) - one vent each" if nvm
-                      else "Shift+RClick the model, then add"),
+                text=(f"{nvm} marcador(es) - un respiradero cada uno" if nvm
+                      else "Shift+Clic der. sobre el modelo, luego añade"),
                 icon='EMPTY_DATA' if nvm else 'INFO')
         else:
-            layout.prop(props, "vent_count", text="Air vents")
+            layout.prop(props, "vent_count", text="Respiraderos de aire")
             if props.vent_count > 0:
-                layout.prop(props, "vent_radius", text="Vent radius")
+                layout.prop(props, "vent_radius", text="Radio del respiradero")
                 if caps and props.vent_radius > caps["vent_r"] + 1e-6:
-                    layout.label(text=f"Vents auto-fitted to Ø{2 * caps['vent_r']:.1f}",
+                    layout.label(text=f"Respiraderos ajustados a Ø{2 * caps['vent_r']:.1f}",
                                  icon='ERROR')
 
 
 class MOLDFORGE_PT_printer(_MFSub, bpy.types.Panel):
-    bl_label = "Printer Fit"
+    bl_label = "Ajuste a Impresora"
     bl_idname = "MOLDFORGE_PT_printer"
     bl_order = 50
 
@@ -678,23 +678,23 @@ class MOLDFORGE_PT_printer(_MFSub, bpy.types.Panel):
         layout = self._body()
         props = context.scene.moldforge
         layout.active = props.printer_fit
-        layout.prop(props, "printer_preset", text="Printer")
+        layout.prop(props, "printer_preset", text="Impresora")
         sub = layout.column()
         sub.enabled = props.printer_preset == 'CUSTOM'
-        sub.prop(props, "max_print_height", text="Max height")
-        layout.prop(props, "support_clearance", text="Supports")
-        layout.prop(props, "fit_positive", text="Cut positive too")
+        sub.prop(props, "max_print_height", text="Altura máx.")
+        layout.prop(props, "support_clearance", text="Soportes")
+        layout.prop(props, "fit_positive", text="Cortar el positivo también")
         if props.max_print_height <= 0:
-            layout.label(text="Pick a printer or type its height", icon='INFO')
+            layout.label(text="Elige una impresora o escribe su altura", icon='INFO')
         elif props.max_print_height < 60.0:
-            layout.label(text=f"{props.max_print_height:.0f} mm?! A Photon is 165",
+            layout.label(text=f"¿{props.max_print_height:.0f} mm?! Una Photon es 165",
                          icon='ERROR')
         else:
-            layout.label(text="Tall parts get split to fit", icon='CON_SIZELIMIT')
+            layout.label(text="Las piezas altas se cortan para caber", icon='CON_SIZELIMIT')
 
 
 class MOLDFORGE_PT_mesh(_MFSub, bpy.types.Panel):
-    bl_label = "Mesh Prep"
+    bl_label = "Preparación de Malla"
     bl_idname = "MOLDFORGE_PT_mesh"
     bl_order = 60
 
@@ -702,7 +702,7 @@ class MOLDFORGE_PT_mesh(_MFSub, bpy.types.Panel):
         props = context.scene.moldforge
         bits = []
         if props.decimate:
-            bits.append(f"decimate {props.decimate_ratio:g}")
+            bits.append(f"decimar {props.decimate_ratio:g}")
         if props.voxel_safe:
             bits.append(f"remesh {props.voxel_size:g}")
         self._summary(self.layout, " · ".join(bits))
@@ -710,17 +710,17 @@ class MOLDFORGE_PT_mesh(_MFSub, bpy.types.Panel):
     def draw(self, context):
         layout = self._body()
         props = context.scene.moldforge
-        layout.prop(props, "heal", text="Heal mesh")
-        layout.prop(props, "decimate", text="Decimate")
+        layout.prop(props, "heal", text="Reparar malla")
+        layout.prop(props, "decimate", text="Decimar")
         if props.decimate:
-            layout.prop(props, "decimate_ratio", text="Ratio")
-        layout.prop(props, "voxel_safe", text="Safe remesh")
+            layout.prop(props, "decimate_ratio", text="Proporción")
+        layout.prop(props, "voxel_safe", text="Remesh seguro")
         if props.voxel_safe:
-            layout.prop(props, "voxel_size", text="Voxel size")
+            layout.prop(props, "voxel_size", text="Tamaño de vóxel")
 
 
 class MOLDFORGE_PT_export(_MFSub, bpy.types.Panel):
-    bl_label = "Materials & Export"
+    bl_label = "Materiales y Exportación"
     bl_idname = "MOLDFORGE_PT_export"
     bl_order = 70
 
@@ -735,14 +735,14 @@ class MOLDFORGE_PT_export(_MFSub, bpy.types.Panel):
         layout = self._body()
         props = context.scene.moldforge
 
-        layout.prop(props, "export_dir", text="Folder")
-        layout.label(text="Header tick = export after Generate", icon='INFO')
+        layout.prop(props, "export_dir", text="Carpeta")
+        layout.label(text="Marca del encabezado = exportar tras Generar", icon='INFO')
         layout.separator()
-        layout.prop(props, "silicone_preset", text="Silicone")
-        layout.prop(props, "silicone_density", text="Density")
-        layout.prop(props, "cast_preset", text="Cast")
-        layout.prop(props, "cast_density", text="Density")
-        layout.prop(props, "plastic_density", text="Print resin")
+        layout.prop(props, "silicone_preset", text="Silicona")
+        layout.prop(props, "silicone_density", text="Densidad")
+        layout.prop(props, "cast_preset", text="Colada")
+        layout.prop(props, "cast_density", text="Densidad")
+        layout.prop(props, "plastic_density", text="Resina de impresión")
 
 
 # Registration order matters: a child listed before its parent breaks the add-on.

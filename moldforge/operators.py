@@ -14,8 +14,8 @@ from .core import util as mf_util
 
 class MOLDFORGE_OT_generate(bpy.types.Operator):
     bl_idname = "moldforge.generate"
-    bl_label = "Generate Mold"
-    bl_description = "Build a silicone mold from the active mesh"
+    bl_label = "Generar Molde"
+    bl_description = "Construye un molde de silicona a partir de la malla activa"
     bl_options = {'REGISTER', 'UNDO'}
 
     _timer = None
@@ -38,7 +38,7 @@ class MOLDFORGE_OT_generate(bpy.types.Operator):
             work = units.build_props(props, context.scene)
             result = pipeline.build_mold_system(context.active_object, work)
         except Exception as exc:  # surface a clean message instead of a traceback
-            self.report({'ERROR'}, f"Mold generation failed: {exc}")
+            self.report({'ERROR'}, f"Falló la generación del molde: {exc}")
             return {'CANCELLED'}
         return self._finalize(context, props, result)
 
@@ -68,11 +68,11 @@ class MOLDFORGE_OT_generate(bpy.types.Operator):
             return self._finalize(context, context.scene.moldforge, done.value)
         except Exception as exc:   # all recovery exhausted / bad input
             self._cleanup(context)
-            self.report({'ERROR'}, f"Mold generation failed: {exc}")
+            self.report({'ERROR'}, f"Falló la generación del molde: {exc}")
             return {'CANCELLED'}
         context.window_manager.progress_update(frac)
         if context.workspace:
-            context.workspace.status_text_set(f"MoldForge: {label}… ({frac * 100:.0f}%)")
+            context.workspace.status_text_set(f"MoldForge: {label}… ({frac * 100:.0f} %)")
         return {'RUNNING_MODAL'}
 
     def _cleanup(self, context):
@@ -101,129 +101,132 @@ class MOLDFORGE_OT_generate(bpy.types.Operator):
         if props.box_style == 'TRAY':
             mode = getattr(props, "tray_mode", 'EMBED')
             if mode == 'STAMP':
-                summary = (f"Stamp mold ready. Pour ≈ {_ml(result['silicone_volume'])} "
-                           f"of silicone in the pan; peel when cured - the slab IS "
-                           f"the stamp (face mirrored, imprints read correctly).")
+                summary = (f"Molde de sello listo. Vierte ≈ {_ml(result['silicone_volume'])} "
+                           f"de silicona en la bandeja; despega al curar - la placa ES "
+                           f"el sello (cara en espejo, las impresiones se leen correctamente).")
             elif mode == 'FRAME':
-                summary = (f"Frame ready. Silicone to pour ≈ "
-                           f"{_ml(result['silicone_volume'])} around your object.")
+                summary = (f"Marco listo. Silicona a verter ≈ "
+                           f"{_ml(result['silicone_volume'])} alrededor de tu objeto.")
             else:
-                summary = (f"Tray ready. Pour ≈ {_ml(result['silicone_volume'])} of "
-                           f"silicone over the embedded master.")
+                summary = (f"Bandeja lista. Vierte ≈ {_ml(result['silicone_volume'])} de "
+                           f"silicona sobre el máster insertado.")
         elif props.box_style == 'POUR_BOX':
-            what = "Silicone skin" if getattr(props, "skin_keys", False) else "Silicone to pour"
-            summary = (f"Pour box ready. {what} ≈ {_ml(result['silicone_volume'])} "
-                       f"(MF_Skin shows it).")
+            what = "Piel de silicona" if getattr(props, "skin_keys", False) else "Silicona a verter"
+            summary = (f"Caja de vertido lista. {what} ≈ {_ml(result['silicone_volume'])} "
+                       f"(MF_Skin la muestra).")
         else:
-            summary = f"Mold ready. Material ≈ {_ml(result['silicone_volume'])}."
+            summary = f"Molde listo. Material ≈ {_ml(result['silicone_volume'])}."
 
         if props.box_style != 'TRAY' and getattr(props, "parts_count", 2) >= 3:
-            summary += f" Split into {props.parts_count} radial wedges."
+            summary += f" Cortado en {props.parts_count} cuñas radiales."
 
         if props.box_style == 'POUR_BOX' and props.base_style == 'LOCK':
-            summary += " Shells lock onto the sawtooth base; bottom prints open."
+            summary += " Las carcasas se anclan a la base de dientes; la base se imprime abierta."
             if not getattr(props, "lock_unite", True):
-                summary += " Base kept separate (MF_Mold_Base)."
+                summary += " Base conservada separada (MF_Mold_Base)."
         lv = result.get("stack_levels")
         if lv:
             is_block = props.box_style == 'SOLID' and getattr(props, "solid_shape", 'HUG') == 'BLOCK'
-            ring = "" if is_block else " with bolted seam rings"
-            summary += f" Cut into {lv} stacked levels{ring}"
+            ring = "" if is_block else " con anillos de línea atornillados"
+            summary += f" Cortado en {lv} niveles apilados{ring}"
             if getattr(props, "printer_fit", False) and getattr(props, "max_print_height", 0.0) > 0:
-                summary += (f" - each fits the {props.max_print_height:.0f} mm print "
-                            f"height with {getattr(props, 'support_clearance', 5.0):.0f} mm "
-                            f"kept for supports")
+                summary += (f" - cada uno cabe en la altura de impresión de "
+                            f"{props.max_print_height:.0f} mm con {getattr(props, 'support_clearance', 5.0):.0f} mm "
+                            f"reservados para soportes")
             summary += "."
         ps = result.get("positive_sections")
         if ps:
             nk = result.get("positive_keys", 0)
-            joins = (f"{nk} printed pegs seat into the next section's sockets"
-                     if nk else "plain glue faces")
-            summary += f" Positive cut into {ps} sections ({joins}; add glue)."
+            joins = (f"{nk} pasadores impresos asientan en los huecos de la siguiente sección"
+                     if nk else "caras planas para encolar")
+            summary += f" Positivo cortado en {ps} secciones ({joins}; añade pegamento)."
 
         if result.get("dual_core"):
-            summary += (f" Dual density: mold '{result['dual_core']}' in a second "
-                        f"run (Bottom: Flat), cast it FIRM, then pour INVERTED: "
-                        f"fill the open base with SOFT and click the core in - "
-                        f"the lips clamp in the grooves, excess burps out the "
-                        f"cross's open quadrants.")
+            summary += (f" Densidad dual: molde '{result['dual_core']}' en una segunda "
+                        f"corrida (Base: Plana), coládalo FIRME, luego vierte INVERTIDO: "
+                        f"llena la base abierta con BLANDO y encaja el núcleo - "
+                        f"los labios se fijan en las ranuras, el exceso sale por los "
+                        f"cuadrantes abiertos de la cruz.")
 
         if any(q.name == "MF_Mold_Plug" for q in result.get("parts", [])):
-            summary += (" Vac-U-Lock plug printed (MF_Mold_Plug) - cast inverted "
-                        "(fill the base, click it in) and the base cures with "
-                        "the attachment channel; pull it after demolding.")
+            summary += (" Plug Vac-U-Lock impreso (MF_Mold_Plug) - cola invertido "
+                        "(llena la base, encaja) y la base cura con "
+                        "el canal de sujeción; retíralo tras desmoldar.")
             if result.get("plug_note"):
                 summary += f" {result['plug_note'][0].upper()}{result['plug_note'][1:]}."
 
         cup_ok = (props.base_style == 'OPEN' and not getattr(props, "base_plate", False)) \
             or (props.base_style == 'LOCK' and props.box_style == 'POUR_BOX')
         if cup_ok and getattr(props, "suction_cup", False):
-            summary += (" Suction-cup former added (MF_Mold_Cup) - fill inverted and "
-                        "press it into the base.")
+            summary += (" Formador de ventosa añadido (MF_Mold_Cup) - llena invertido y "
+                        "presiónalo en la base.")
 
         notes = []
         if result.get("plug_skipped"):
-            notes.append("Vac-U-Lock Plug skipped - "
+            notes.append("Plug Vac-U-Lock omitido - "
                          + (result.get("plug_note")
-                            or "this mold is smaller than the original-size plug "
-                               "(it needs a cavity about 92 mm tall and a base "
-                               "wide enough for the 55 mm bell)"))
+                            or "este molde es más pequeño que el plug a tamaño original "
+                               "(necesita una cavidad de unos 92 mm de alto y una base "
+                               "lo bastante ancha para la campana de 55 mm)"))
         if result.get("blades_shaved"):
-            notes.append(f"{result['blades_shaved']} paper-thin boolean shard(s) "
-                         f"(vent bore grazing a seam or wall) were auto-removed "
-                         f"from the shells")
+            notes.append(f"{result['blades_shaved']} fragmento(s) booleano(s) de papel "
+                         f"(una perforación de respiradero rozando una línea o pared) "
+                         f"se eliminaron automáticamente de las carcasas")
         if result.get("kept_prev"):
-            notes.append(f"your previous mold's {result['kept_prev']} part(s) "
-                         f"were kept (renamed Kept_MF_*) so the dual-density "
-                         f"main mold survives this core-mold build")
+            notes.append(f"las {result['kept_prev']} pieza(s) de tu molde anterior "
+                         f"se conservaron (renombradas Kept_MF_*) para que el molde "
+                         f"principal de densidad dual sobreviva a esta construcción del "
+                         f"molde de núcleo")
         if result.get("stack_floored"):
-            notes.append(f"Max Print Height {getattr(props, 'max_print_height', 0):.0f} mm "
-                         f"looks like a typo (the field is MILLIMETRES - a Photon "
-                         f"Mono 4K is 165, an Ender-3 is 250), so levels were sized "
-                         f"to the 25 mm minimum instead; set your printer's real "
-                         f"height or pick a preset")
+            notes.append(f"La Altura máx. de impresión de {getattr(props, 'max_print_height', 0):.0f} mm "
+                         f"parece un error de tipeo (el campo está en MILÍMETROS - una "
+                         f"Photon Mono 4K es 165, una Ender-3 es 250), así que los niveles "
+                         f"se dimensionaron al mínimo de 25 mm; fija la altura real de tu "
+                         f"impresora o elige un preset")
         if result.get("stack_capped"):
-            notes.append("Printer Fit capped the stack at 8 levels - the mold is "
-                         "extremely tall for this Max Print Height")
+            notes.append("Ajustar a impresora limitó la pila a 8 niveles - el molde es "
+                         "extremadamente alto para esta Altura máx. de impresión")
         if result.get("stack_over"):
-            notes.append("one stacked level is still taller than Max Print Height "
-                         "(usually the funnel spout riding the top level) - raise "
-                         "the limit a little or lower the funnel")
+            notes.append("un nivel apilado sigue siendo más alto que la Altura máx. de "
+                         "impresión (normalmente el vertedor del embudo sobre el nivel "
+                         "superior) - sube un poco el límite o baja el embudo")
         if result.get("positive_over"):
-            notes.append("a positive piece is taller than the usable height "
-                         "(Cut Positive Too is off, the mesh was too messy to "
-                         "section, or seams were clamped) - print that piece tilted")
+            notes.append("una pieza del positivo es más alta que la altura útil "
+                         "(Cortar el positivo también está apagado, la malla estaba "
+                         "demasiado desordenada para seccionarla, o las líneas se "
+                         "trabaron) - imprime esa pieza inclinada")
         if result.get("base_united") is False:
-            notes.append("the sawtooth base could not be boolean-united into the "
-                         "positive (messy source mesh), so it sits inside it as a "
-                         "second shell - slicer hollowing tools will leave the base "
-                         "solid; heal or remesh the model for a clean union")
+            notes.append("la base de dientes de sierra no pudo fusionarse por booleana "
+                         "con el positivo (malla fuente desordenada), así que queda "
+                         "dentro como una segunda carcasa - las herramientas de vaciado "
+                         "del slicer dejarán la base sólida; repara o remesh el modelo "
+                         "para una unión limpia")
         if result.get("remeshed"):
-            notes.append("the direct mold's cavity was carved from an auto-remeshed "
-                         "copy (fine cavity detail is smoothed); the positive keeps "
-                         "full detail")
+            notes.append("la cavidad del molde directo se talló desde una copia "
+                         "auto-remeshada (el detalle fino de la cavidad se suaviza); el "
+                         "positivo conserva todo el detalle")
         if result.get("trimmed"):
-            notes.append("a small severed fragment was trimmed (e.g. an open-bottom "
-                         "rim) to keep each half one solid")
+            notes.append("se recortó un pequeño fragmento suelto (p. ej. un borde de "
+                         "base abierta) para que cada mitad quede como un solo sólido")
         undercut = result.get("undercut", 0.0)
         if undercut > 0.04:
-            notes.append(f"~{undercut * 100:.0f}% of the model is undercut on the "
-                         f"{result.get('axis', '?')} axis and may not release cleanly "
-                         f"from a two-part mold (try another Split Axis)")
+            notes.append(f"~{undercut * 100:.0f} % del modelo tiene socavones en el eje "
+                         f"{result.get('axis', '?')} y puede no liberarse limpiamente "
+                         f"de un molde de dos partes (prueba otro Eje de corte)")
 
         if props.export_after and props.export_dir:
             directory = bpy.path.abspath(props.export_dir)
             try:
                 if not os.path.isdir(directory):
-                    raise OSError(f"{directory!r} is not a folder")
+                    raise OSError(f"{directory!r} no es una carpeta")
                 to_export = list(result["parts"])
                 to_export.extend(result.get("positive_parts")   # prints too (see button)
                                  or ([result["positive"]] if result.get("positive")
                                      else []))
                 written = mf_export.export_objects(to_export, directory)
-                summary += f" Exported {len(written)} part(s)."
+                summary += f" Se exportaron {len(written)} pieza(s)."
             except Exception as exc:  # the mold built fine; don't fail on export
-                notes.append(f"export failed: {getattr(exc, 'strerror', None) or exc}")
+                notes.append(f"falló la exportación: {getattr(exc, 'strerror', None) or exc}")
 
         if notes:
             self.report({'WARNING'}, summary + " (" + "; ".join(notes) + ".)")
@@ -262,33 +265,35 @@ def _add_marker(context, base_name, draw_type):
 
 class MOLDFORGE_OT_add_vent_marker(bpy.types.Operator):
     bl_idname = "moldforge.add_vent_marker"
-    bl_label = "Add Vent Marker"
-    bl_description = ("Drop a vent marker at the 3D cursor - snap the cursor onto "
-                      "the model first (Shift+Right-Click). With Vents set to "
-                      "Manual, Generate drills ONE vent at every marker; move, "
-                      "duplicate or delete markers like any object")
+    bl_label = "Añadir Marcador de Respiradero"
+    bl_description = ("Coloca un marcador de respiradero en el cursor 3D - ajusta el "
+                      "cursor sobre el modelo primero (Shift+Clic derecho). Con "
+                      "Respiraderos en Manual, Generar perfora UN respiradero en cada "
+                      "marcador; mueve, duplica o elimina los marcadores como cualquier "
+                      "objeto")
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         em = _add_marker(context, "MF_VentMark", 'SPHERE')
-        self.report({'INFO'}, f"{em.name} placed - move it freely, then Generate.")
+        self.report({'INFO'}, f"{em.name} colocado - muévelo libremente, luego Genera.")
         return {'FINISHED'}
 
 
 
 class MOLDFORGE_OT_add_pour_marker(bpy.types.Operator):
     bl_idname = "moldforge.add_pour_marker"
-    bl_label = "Add Pour Marker"
-    bl_description = ("Drop a pour marker at the 3D cursor - snap the cursor onto "
-                      "the model first (Shift+Right-Click). Each marker adds an "
-                      "EXTRA spout whose channel bores from the mold top ALL the "
-                      "way down to the marker itself, opening into the pour right "
-                      "there; the first spout keeps the Placement setting above")
+    bl_label = "Añadir Marcador de Vertido"
+    bl_description = ("Coloca un marcador de vertido en el cursor 3D - ajusta el "
+                      "cursor sobre el modelo primero (Shift+Clic derecho). Cada "
+                      "marcador añade un vertedor EXTRA cuyo canal perfora desde la "
+                      "parte superior del molde TODO el camino hasta el propio "
+                      "marcador, abriéndose justo ahí en el vertido; el primer "
+                      "vertedor conserva la opción de Ubicación de arriba")
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         em = _add_marker(context, "MF_PourMark", 'CONE')
-        self.report({'INFO'}, f"{em.name} placed - move it freely, then Generate.")
+        self.report({'INFO'}, f"{em.name} colocado - muévelo libremente, luego Genera.")
         return {'FINISHED'}
 
 
@@ -310,22 +315,22 @@ def _restore_exploded(coll):
 
 class MOLDFORGE_OT_explode(bpy.types.Operator):
     bl_idname = "moldforge.explode"
-    bl_label = "Exploded Preview"
-    bl_description = ("Lay every generated part out in a row on one baseline - "
-                      "same height, nothing overlapping, so you can see each "
-                      "piece (the skin and the positive share the same space in "
-                      "the build). Press again to snap everything back. Display "
-                      "only: exports are never affected")
+    bl_label = "Vista Explosionada"
+    bl_description = ("Acomoda cada pieza generada en una fila sobre una misma base - "
+                      "misma altura, sin superposiciones, para que veas cada "
+                      "pieza (la piel y el positivo comparten el mismo espacio en "
+                      "la construcción). Pulsa de nuevo para regresar todo a su "
+                      "lugar. Solo visual: las exportaciones nunca se ven afectadas")
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         coll = bpy.data.collections.get(mf_util.COLLECTION_NAME)
         objs = [o for o in (coll.objects if coll else []) if o.type == 'MESH']
         if not objs:
-            self.report({'ERROR'}, "No mold parts found. Generate a mold first.")
+            self.report({'ERROR'}, "No se encontraron piezas del molde. Genera un molde primero.")
             return {'CANCELLED'}
         if _restore_exploded(coll):
-            self.report({'INFO'}, "Parts reassembled.")
+            self.report({'INFO'}, "Piezas reensambladas.")
             return {'FINISHED'}
 
         boxes = {o.name: mf_util.world_bbox(o) for o in objs}
@@ -369,15 +374,16 @@ class MOLDFORGE_OT_explode(bpy.types.Operator):
             o["mf_explode"] = list(o.location)     # home, for an exact restore
             o.location = o.location + offv
             x += w + gap
-        self.report({'INFO'}, f"{len(objs)} parts laid out - press again to reassemble.")
+        self.report({'INFO'}, f"{len(objs)} piezas acomodadas - pulsa de nuevo para reensamblar.")
         return {'FINISHED'}
 
 
 class MOLDFORGE_OT_export(bpy.types.Operator):
     bl_idname = "moldforge.export"
-    bl_label = "Export Mold Parts"
-    bl_description = ("Export every generated print as STL: the mold shells and "
-                      "base/former parts (MF_Mold_*) plus the positive (MF_Positive)")
+    bl_label = "Exportar Piezas del Molde"
+    bl_description = ("Exporta cada impresión generada como STL: las carcasas del "
+                      "molde y las piezas de base/formador (MF_Mold_*) más el "
+                      "positivo (MF_Positive)")
     bl_options = {'REGISTER'}
 
     directory: StringProperty(subtype='DIR_PATH')
@@ -385,12 +391,12 @@ class MOLDFORGE_OT_export(bpy.types.Operator):
     def execute(self, context):
         directory = bpy.path.abspath(self.directory or context.scene.moldforge.export_dir)
         if not directory or not os.path.isdir(directory):
-            self.report({'ERROR'}, "Choose a valid export folder first.")
+            self.report({'ERROR'}, "Elige primero una carpeta de exportación válida.")
             return {'CANCELLED'}
 
         coll = bpy.data.collections.get(mf_util.COLLECTION_NAME)
         if _restore_exploded(coll):
-            self.report({'INFO'}, "Exploded preview reassembled before export.")
+            self.report({'INFO'}, "Vista explosionada reensamblada antes de exportar.")
         # Everything printable: shells/base/former (MF_Mold_*) AND the positive —
         # with a Locking Base the positive+plinth is a print too (it was silently
         # missing from the export). MF_Skin stays out: it previews the silicone.
@@ -400,15 +406,15 @@ class MOLDFORGE_OT_export(bpy.types.Operator):
                              or o.name.startswith("MF_Positive"))),
                        key=lambda o: o.name)
         if not parts:
-            self.report({'ERROR'}, "No mold parts found. Generate a mold first.")
+            self.report({'ERROR'}, "No se encontraron piezas del molde. Genera un molde primero.")
             return {'CANCELLED'}
 
         try:
             written = mf_export.export_objects(parts, directory)
         except Exception as exc:
-            self.report({'ERROR'}, f"Export failed: {getattr(exc, 'strerror', None) or exc}")
+            self.report({'ERROR'}, f"Falló la exportación: {getattr(exc, 'strerror', None) or exc}")
             return {'CANCELLED'}
-        self.report({'INFO'}, f"Exported {len(written)} part(s) to {directory}")
+        self.report({'INFO'}, f"Se exportaron {len(written)} pieza(s) a {directory}")
         return {'FINISHED'}
 
     def invoke(self, context, event):
