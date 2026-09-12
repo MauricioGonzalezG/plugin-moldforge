@@ -245,12 +245,12 @@ class MoldForgeProperties(bpy.types.PropertyGroup):
                       "(el grosor de la placa)", mn=0.0, soft=40.0)
 
     # --- Sizes (absolute, scene units / mm) ----------------------------- #
-    wall_thickness: _dist("Grosor de silicona / pared", 3.0,
+    wall_thickness: _dist("Grosor de silicona / pared", 4.5,
                           "Grosor de silicona (espacio de vertido / piel de guante, o "
                           "la pared del molde directo)", mn=0.1)
     shell_wall: _dist("Pared de la carcasa impresa", 2.0,
                       "Grosor de la pared de la carcasa de vertido impresa", mn=0.4)
-    sprue_radius: _dist("Radio de garganta", 6.08,
+    sprue_radius: _dist("Radio de garganta", 7.26,
                         "Radio de la parte estrecha (BASE) del embudo — el agujero por "
                         "donde entra al molde. La boca (arriba) es este valor x Apertura "
                         "de boca. Si escribes más de lo que el molde admite, se ajusta "
@@ -676,7 +676,7 @@ class MoldForgeProperties(bpy.types.PropertyGroup):
         default=True,
     )
     sprue_flare: FloatProperty(
-        name="Apertura del embudo", default=2.4, min=1.0, max=8.0,
+        name="Apertura del embudo", default=5.3, min=1.0, max=8.0,
         description="Ancho de boca como múltiplo del radio de la garganta — 1.0 es "
                     "un tubo recto (mejor cuando un cono ancho no cabe en la forma), "
                     "mayor es un embudo receptor más ancho (limitado automáticamente "
@@ -747,9 +747,9 @@ class MoldForgeProperties(bpy.types.PropertyGroup):
         name="Respiraderos de aire",
         description="Canales finos desde los puntos altos de la cavidad hacia el "
                     "exterior",
-        default=1, min=0, max=8,
+        default=2, min=0, max=8,
     )
-    vent_radius: _dist("Radio del respiradero", 1.0,
+    vent_radius: _dist("Radio del respiradero", 3.01,
                        "Radio de cada canal de respiradero; si escribes más de lo que "
                        "el molde admite, vuelve al máximo que cabe",
                        mn=0.2, soft=4.0, update=_clamp_vent_radius)
