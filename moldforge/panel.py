@@ -609,7 +609,10 @@ class MOLDFORGE_PT_pour(_MFSub, bpy.types.Panel):
 
         col = layout.column()
         col.active = props.sprue
+        col.prop(props, "funnel_style", text="Estilo")
         col.prop(props, "sprue_radius", text="Radio de garganta")
+        if props.funnel_style == 'SEMI_RECT':
+            col.prop(props, "sprue_rect_len", text="Largo/Ancho")
         col.prop(props, "funnel_height", text="Altura")
         row = col.row(align=True)
         row.prop(props, "sprue_flare", text="Apertura de boca")

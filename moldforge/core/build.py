@@ -2081,6 +2081,37 @@ def _union_funnel_rind(rind, f, eps, width, coll):
     t_z = min(max(f.get("throat_top", base_z), base_z + 0.5), apex_z - 0.5)
     n_out, m_out = f["neck_out"], f["mouth_out"]
 
+    if f.get("style") == 'SEMI_RECT':
+        # Embudo semirectangular: la envoltura del ala también es estadio, con
+        # el mismo eje largo y la misma proporción largo/ancho del spout; el
+        # ancho crece con la apertura en la copa, igual que en el embudo redondo.
+        from .sprue import _stadium_solid
+        ax, ratio = f["long_axis"], f["len_ratio"]
+
+        def shell_rect(z0, z1, w_in0, w_in1, w_out0, w_out1):
+            if z1 - z0 <= 0.1:
+                return
+            inner = _stadium_solid("MF_wfi", cx, cy, z0, z1,
+                                   w_in0, w_in0 * ratio, w_in1, w_in1 * ratio,
+                                   ax, coll)
+            outer = _stadium_solid("MF_wfo", cx, cy, z0, z1,
+                                   w_out0, w_out0 * ratio, w_out1, w_out1 * ratio,
+                                   ax, coll)
+            if outer is None:
+                return
+            if inner is not None:
+                util.boolean(outer, inner, 'DIFFERENCE')
+                util.remove_object(inner)
+            if outer.data.polygons:
+                util.boolean(rind, outer, 'UNION')
+            util.remove_object(outer)
+
+        shell_rect(base_z, t_z, n_out - eps, n_out - eps,
+                   n_out + width, n_out + width)                     # cuello recto
+        shell_rect(t_z, apex_z, n_out - eps, m_out - eps,
+                   n_out + width, m_out + width)                     # copa
+        return
+
     def shell(z0, z1, r0_in, r1_in, r0_out, r1_out):
         if z1 - z0 <= 0.1:
             return

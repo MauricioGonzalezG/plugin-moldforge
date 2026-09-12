@@ -682,6 +682,24 @@ class MoldForgeProperties(bpy.types.PropertyGroup):
                     "mayor es un embudo receptor más ancho (limitado automáticamente "
                     "al molde)",
     )
+    funnel_style: EnumProperty(
+        name="Estilo de embudo",
+        description="Forma de la sección del embudo de vertido",
+        items=[
+            ('ROUND', "Redondo",
+             "Embudo clásico de sección circular (garganta y boca redondas)"),
+            ('SEMI_RECT', "Semirectangular",
+             "Sección estadio (rectángulo redondeado) alargada a lo largo del eje "
+             "con más sitio del molde — boca y canal anchos para figuras de copa "
+             "estrecha. Usa Apertura de boca para el ancho y Largo semirectangular "
+             "para la elongación"),
+        ],
+        default='ROUND',
+    )
+    sprue_rect_len: _dist("Largo semirectangular", 2.0,
+                          "Relación largo/ancho de la sección del embudo "
+                          "semirectangular (1.0 = círculo redondo)",
+                          mn=1.0, soft=4.0)
     big_mouth: BoolProperty(
         name="Boca sobredimensionada",
         description="Boca totalmente manual: exactamente garganta x Apertura del "
@@ -747,7 +765,7 @@ class MoldForgeProperties(bpy.types.PropertyGroup):
         name="Respiraderos de aire",
         description="Canales finos desde los puntos altos de la cavidad hacia el "
                     "exterior",
-        default=2, min=0, max=8,
+        default=1, min=0, max=8,
     )
     vent_radius: _dist("Radio del respiradero", 3.01,
                        "Radio de cada canal de respiradero; si escribes más de lo que "

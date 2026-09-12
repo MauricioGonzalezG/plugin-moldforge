@@ -1121,6 +1121,8 @@ def _derive_sizes(work, props):
         vent_place=getattr(props, "vent_place", 'AUTO'),
         funnel_height=getattr(props, "funnel_height", 12.0),
         sprue_flare=getattr(props, "sprue_flare", 2.4),
+        funnel_style=getattr(props, "funnel_style", 'ROUND'),
+        sprue_rect_len=getattr(props, "sprue_rect_len", 2.0),
         big_mouth=getattr(props, "big_mouth", False),
         big_throat=getattr(props, "big_throat", False),
         sprue_count=getattr(props, "sprue_count", 1),

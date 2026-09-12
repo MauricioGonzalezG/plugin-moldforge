@@ -8,6 +8,7 @@ Two phases so the clamp wings can run up the funnel without clogging it:
 
 import math
 
+import bmesh
 from mathutils import Vector
 
 from . import constants as C
@@ -31,6 +32,10 @@ def _funnel_at(mold, master, pt, props):
                else min(props.sprue_radius, C.THROAT_CAP * mold_half_min))
     flare = max(getattr(props, "sprue_flare", 2.4), 1.0)        # 1.0 = straight tube
     big_mouth = getattr(props, "big_mouth", False)
+    style = getattr(props, "funnel_style", 'ROUND')
+    semi = style == 'SEMI_RECT'
+    ratio = max(getattr(props, "sprue_rect_len", 2.0), 1.0) if semi else 1.0
+    long_axis = 'X' if (mx.x - mn.x) >= (mx.y - mn.y) else 'Y'
     # Mouth auto-caps at MOUTH_CAP * half-width so it stays on the mold; Oversized
     # Mouth is fully manual (throat x Flare exactly) and may overhang (UI warns).
     mouth_r = (sprue_r * flare if big_mouth
@@ -45,6 +50,12 @@ def _funnel_at(mold, master, pt, props):
     edge = min(pt.x - mn.x, mx.x - pt.x, pt.y - mn.y, mx.y - pt.y)
     if not big_mouth:
         mouth_r = min(mouth_r, edge - wall)
+    if semi and not big_mouth:
+        # El extremo largo del estadio también debe quedar sobre el molde:
+        # el semilargo exterior es (boca + pared) x ratio.
+        edge_long = (min(pt.x - mn.x, mx.x - pt.x) if long_axis == 'X'
+                     else min(pt.y - mn.y, mx.y - pt.y))
+        mouth_r = min(mouth_r, edge_long / ratio - wall)
     mouth_r = max(mouth_r, sprue_r)
 
     # The cavity ceiling follows the model surface raised by ``gap``. Probe the
@@ -85,8 +96,9 @@ def _funnel_at(mold, master, pt, props):
         max_drop = radius * C.FUNNEL_LOCAL_DROP + gap + wall
         return (hi, min(z for z in zs if z >= hi - max_drop))
 
-    local_top, neck_floor = model_span((sprue_r + wall) * 1.05)   # under the neck
-    wide_top, _ = model_span(mouth_r + wall)                      # under the mouth
+    probe = (1.0 + (ratio - 1.0) * 0.7) if semi else 1.0
+    local_top, neck_floor = model_span((sprue_r + wall) * probe * 1.05)   # under the neck
+    wide_top, _ = model_span(mouth_r * probe + wall)                      # under the mouth
     # Drop the base below the LOWEST cavity ceiling under the neck so the spout welds
     # to the shell all the way round even where the body curves/leans away under a
     # wide throat (the cause of a one-sided gap). The cavity is carved LAST, so the
@@ -110,6 +122,8 @@ def _funnel_at(mold, master, pt, props):
         "apex_z": apex_z, "throat_top": throat_top, "clear": 0.0,
         "sprue_r": sprue_r, "mouth_r": mouth_r, "wall": wall, "breach": breach,
         "neck_out": sprue_r + wall, "mouth_out": mouth_r + wall,
+        "style": 'SEMI_RECT' if semi else 'ROUND',
+        "len_ratio": ratio, "long_axis": long_axis,
     }
 
 
@@ -233,6 +247,56 @@ def _marker_funnel_at(mold, master, pt, props):
             "neck_out": tube_out, "mouth_out": mouth_rr + wall_t}
 
 
+def _stadium_loop(half_w, half_l, n_arc=10):
+    """Cross-section points (CCW) of a stadium (rounded rectangle): straight sides
+    along the long axis with semicircular ends of radius ``half_w``. A ``half_l``
+    at or below ``half_w`` degenerates to a circle. Always returns 2*(n_arc+1)
+    points so two rings can be lofted one into the other."""
+    hw = max(half_w, 1e-4)
+    hl = max(half_l, hw)
+    n = 2 * (n_arc + 1)
+    c = hl - hw
+    if c <= 1e-4:
+        return [(math.cos(2.0 * math.pi * i / n) * hw,
+                 math.sin(2.0 * math.pi * i / n) * hw) for i in range(n)]
+    pts = []
+    for i in range(n_arc + 1):                  # arco del extremo +X: -90° -> +90°
+        a = -0.5 * math.pi + math.pi * i / n_arc
+        pts.append((c + math.cos(a) * hw, math.sin(a) * hw))
+    for i in range(n_arc + 1):                  # arco del extremo -X: +90° -> +270°
+        a = 0.5 * math.pi + math.pi * i / n_arc
+        pts.append((-c + math.cos(a) * hw, math.sin(a) * hw))
+    return pts
+
+
+def _stadium_solid(name, cx, cy, z0, z1, w0, l0, w1, l1, long_axis, coll,
+                   n_arc=10):
+    """A lofted solid whose cross-section is a stadium (rounded rectangle):
+    half-width ``w`` and half-length ``l`` (>= w), elongated along ``long_axis``
+    ('X' or 'Y'), tapering linearly from the sizes at z0 to those at z1.
+    Returns None when the span is too thin to build."""
+    if z1 - z0 <= 0.1:
+        return None
+    bm = bmesh.new()
+    rot = long_axis == 'Y'
+    rows = []
+    for pts, z in ((_stadium_loop(w0, l0, n_arc), z0),
+                   (_stadium_loop(w1, l1, n_arc), z1)):
+        row = []
+        for px, py in pts:
+            x, y = (py, px) if rot else (px, py)
+            row.append(bm.verts.new((cx + x, cy + y, z)))
+        rows.append(row)
+    bm.faces.new(rows[0])
+    bm.faces.new(rows[1])
+    n = len(rows[0])
+    for i in range(n):
+        j = (i + 1) % n
+        bm.faces.new((rows[0][i], rows[0][j], rows[1][j], rows[1][i]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    return util.new_mesh_object(name, bm, coll)
+
+
 def add_funnel_spouts(mold, master, props, coll):
     """Phase 1: union the solid funnel spout(s) (narrow neck -> wide mouth) onto the
     mold and return their geometry (a list) so the wings can run up them.
@@ -284,12 +348,37 @@ def add_funnel_spouts(mold, master, props, coll):
         jacket = props.box_style == 'POUR_BOX'
         t_z = f.get("throat_top", f["base_z"]) if jacket else f["base_z"]
         t_z = min(max(t_z, f["base_z"] + 0.5), f["apex_z"] - 0.5)
+        neck_base = max(f["neck_out"] * C.NECK_TAPER, f["wall"])
+        if f.get("style") == 'SEMI_RECT' and not f.get("marker"):
+            # Embudo SEMIRECTANGULAR (sección estadio): el mismo taper de dos
+            # piezas, pero la sección es un rectángulo redondeado alargado
+            # según ``long_axis`` — canal y boca anchos para figuras de copa
+            # estrecha. El ancho (eje corto) sigue las mismas reglas del
+            # embudo redondo (garganta, apertura, topes), y el largo es
+            # ancho x Largo semirectangular.
+            ax, ratio = f["long_axis"], f["len_ratio"]
+            neck = _stadium_solid("MF_funnel", f["x"], f["y"],
+                                  f["base_z"], t_z,
+                                  neck_base, neck_base * ratio,
+                                  f["neck_out"], f["neck_out"] * ratio,
+                                  ax, coll)
+            if neck is not None:
+                util.boolean(mold, neck, 'UNION')
+                util.remove_object(neck)
+            if f["apex_z"] - t_z > 0.1:
+                cup = _stadium_solid("MF_funnel", f["x"], f["y"], t_z, f["apex_z"],
+                                     f["neck_out"], f["neck_out"] * ratio,
+                                     f["mouth_out"], f["mouth_out"] * ratio,
+                                     ax, coll)
+                if cup is not None:
+                    util.boolean(mold, cup, 'UNION')
+                    util.remove_object(cup)
+            continue
         # Tapered neck CONE (not a straight cylinder): a wide cylinder plunging to a
         # deep base juts out past the contour on a narrow/leaning side. The cone is
         # full width at the throat (where it welds to the shell and opens the hole) and
         # narrows going down, so the deep part stays slim and inside the cavity, which
         # is carved away. Paired with the flared cup, the spout is a pair of cones.
-        neck_base = max(f["neck_out"] * C.NECK_TAPER, f["wall"])
         neck = util.add_cone(
             "MF_funnel", Vector((f["x"], f["y"], (f["base_z"] + t_z) * 0.5)),
             neck_base, f["neck_out"], t_z - f["base_z"], 'Z', coll,
@@ -357,6 +446,26 @@ def bore_funnels_and_vents(mold, master, props, funnels, coll):
         t_z = min(max(funnel["throat_top"], bore_bottom + 0.5), bore_top - 0.5)
         bore_base = (funnel["sprue_r"] if funnel.get("marker")   # straight shaft
                      else max(funnel["sprue_r"] * C.NECK_TAPER, 0.4))
+        if funnel.get("style") == 'SEMI_RECT' and not funnel.get("marker"):
+            # Taladro semirectangular: mismo esquema de dos piezas, sección estadio.
+            ax, ratio = funnel["long_axis"], funnel["len_ratio"]
+            neck = _stadium_solid("MF_funnelbore", funnel["x"], funnel["y"],
+                                  bore_bottom, t_z + 0.2,
+                                  bore_base, bore_base * ratio,
+                                  funnel["sprue_r"], funnel["sprue_r"] * ratio,
+                                  ax, coll)
+            if neck is not None:
+                util.boolean(mold, neck, 'DIFFERENCE')
+                util.remove_object(neck)
+            flare = _stadium_solid("MF_funnelbore", funnel["x"], funnel["y"],
+                                   t_z, bore_top,
+                                   funnel["sprue_r"], funnel["sprue_r"] * ratio,
+                                   funnel["mouth_r"], funnel["mouth_r"] * ratio,
+                                   ax, coll)
+            if flare is not None:
+                util.boolean(mold, flare, 'DIFFERENCE')
+                util.remove_object(flare)
+            continue
         neck = util.add_cone(
             "MF_funnelbore", Vector((funnel["x"], funnel["y"],
                                      (bore_bottom + t_z + 0.2) * 0.5)),
@@ -373,7 +482,9 @@ def bore_funnels_and_vents(mold, master, props, funnels, coll):
 
     def clears_funnels(p):
         for f in funnels:
-            if math.hypot(p.x - f["x"], p.y - f["y"]) <= f["mouth_out"] + vent_r + 2.0:
+            eff = f["mouth_out"] * (f["len_ratio"]
+                                    if f.get("style") == 'SEMI_RECT' else 1.0)
+            if math.hypot(p.x - f["x"], p.y - f["y"]) <= eff + vent_r + 2.0:
                 return False
         return True
 
