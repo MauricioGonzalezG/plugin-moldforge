@@ -488,6 +488,14 @@ def bore_funnels_and_vents(mold, master, props, funnels, coll):
                 return False
         return True
 
+    # Dirección de la partición resuelta UNA VEZ: world_bbox es O(verts) y
+    # off_seams corre por cada vértice candidato de respiradero — un bbox por
+    # vértice en mallas grandes era O(V²) y colgaba el build por minutos.
+    seam_axis = getattr(props, "split_axis", 'AUTO')
+    if seam_axis not in ('X', 'Y'):
+        mn2, mx2 = util.world_bbox(master)
+        seam_axis = 'X' if (mx2.x - mn2.x) >= (mx2.y - mn2.y) else 'Y'
+
     def off_seams(p):
         """A vent bore grazing a parting plane leaves a paper-thin blade of
         shell standing on the seam face - a fragile needle right where the
@@ -511,11 +519,7 @@ def bore_funnels_and_vents(mold, master, props, funnels, coll):
                 a2 = k * step + s_ * min(margin / r2, step * 0.45)
                 q.x, q.y = r2 * math.cos(a2), r2 * math.sin(a2)
             return q
-        axis = getattr(props, "split_axis", 'AUTO')
-        if axis not in ('X', 'Y'):
-            mn2, mx2 = util.world_bbox(master)
-            axis = 'X' if (mx2.x - mn2.x) >= (mx2.y - mn2.y) else 'Y'
-        i = 0 if axis == 'X' else 1
+        i = 0 if seam_axis == 'X' else 1
         if abs(q[i]) < margin:
             q[i] = margin if q[i] >= 0.0 else -margin
         return q
