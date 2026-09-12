@@ -676,7 +676,7 @@ class MoldForgeProperties(bpy.types.PropertyGroup):
         default=True,
     )
     sprue_flare: FloatProperty(
-        name="Apertura del embudo", default=2.4, min=1.0, max=4.0,
+        name="Apertura del embudo", default=2.4, min=1.0, max=8.0,
         description="Ancho de boca como múltiplo del radio de la garganta — 1.0 es "
                     "un tubo recto (mejor cuando un cono ancho no cabe en la forma), "
                     "mayor es un embudo receptor más ancho (limitado automáticamente "
