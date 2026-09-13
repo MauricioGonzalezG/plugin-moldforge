@@ -1869,94 +1869,97 @@ def _wing_rind(master, outer_offset, width, props, coll, funnels=None, under=Non
 def _profile_flange(mold, master, ai, h, center, mn, mx, outer_offset, width,
                     thickness, props, coll, funnels=None, seam_off=0.0, cavity=None,
                     under=None):
-    """Side flanges along the parting seam that hug the CONTOUR and run up the funnel.
+    """Side flanges along the parting seam with a harmonious flowing outline.
 
-    Built as a thin shell just OUTSIDE the mold wall (a 'rind' = dilate(master,
-    offset+width) minus dilate(master, offset-eps)), plus the funnel rinds, then
-    clipped to a thin slab on the parting plane — leaving a solid, contoured lip
-    across the seam. This is the same construction the radial wings use, and unlike
-    the old 'smear the whole mold sideways' it works whether the mold is still solid
-    (pour box) or already hollow (direct mold): smearing a hollow shell left only
-    thin, ragged fins (broken wings)."""
-    big = (mx - mn).length * 2.0 + 10.0
+    The wing is built DIRECTLY as a lofted band in the parting plane: the outer
+    edge is the SMOOTHED silhouette of (model grown by offset+wing, plus the
+    funnel column it wraps), and the inner edge hugs the shell's outer surface
+    (silhouette + offset, sunk a hair for a clean weld). No boolean slab carve —
+    the fin is one watertight extrusion that rises to wrap the funnel mouth and
+    slides down with the body's contour to the base."""
+    import numpy as np
+    import bmesh
     mmn, mmx = util.world_bbox(mold)
-    # The slab starts a hair ABOVE the mold's bottom, never below it: the rind is
-    # dilated offset+width from the model, so under the base it reaches well past
-    # the mold bottom, and a slab that overhung the bottom welded a fin under the
-    # shell along the whole seam. The final bottom cut used to remove it - and on a
-    # machine where that cut silently fails, the fin shipped as a bar across the
-    # socket mouth. No overhang, nothing to remove.
-    z_lo = mmn.z + 0.3
-    # Las alas no suben por el embudo: el labio remata en el tope del modelo
-    # (la envoltura del embudo, incluida en el rind, queda fuera del slab).
-    model_top = util.world_bbox(master)[1].z
-    z_hi = min(mmx.z + 2.0, model_top)
-    if z_hi <= z_lo + 1.0:               # modelo por debajo de la base (no ocurre): sin tope
-        z_hi = mmx.z + 2.0
-    zc = (z_lo + z_hi) * 0.5
-    zsz = z_hi - z_lo
+    z_floor = mmn.z + 0.3                      # nunca por debajo de la base
 
-    rind = _wing_rind(master, outer_offset, width, props, coll, funnels, under)
+    N = 96
+    wmn, wmx = util.world_bbox(master)
+    umin = min(wmn[h], mmn[h]) - 2.0
+    umax = max(wmx[h], mmx[h]) + 2.0
+    us = np.linspace(umin, umax, N)
 
-    # Sin "orejas": a la altura del tope del modelo el labio puede quedar más
-    # ancho que la boca del embudo (silueta del arco + offset + ala vs. una
-    # boca más estrecha) y asoma a sus lados como placas planas. En esa banda
-    # superior el labio se recorta a la silueta de la COLUMNA del propio
-    # embudo, de modo que el ala remata abrazando el spout.
-    band_h = max(thickness * 2.0, 8.0)
-    z_band0 = model_top - band_h
-    for f in (funnels or ()):
-        neck_out = f.get("neck_out")
-        if (neck_out is None or f.get("apex_z", 0.0) <= model_top
-                or f.get("throat_top", 0.0) <= z_band0):
-            continue
-        if f.get("style") == 'SEMI_RECT' and f.get("long_axis"):
-            keep = _stadium_solid("MF_wkeep", f["x"], f["y"],
-                                  z_band0 - 2.0, f["throat_top"] + 1.0,
-                                  neck_out, neck_out * f["len_ratio"],
-                                  neck_out, neck_out * f["len_ratio"],
-                                  f["long_axis"], coll)
+    # Silueta del modelo (vista según el eje de corte): z máximo por columna.
+    sil = np.full(N, np.nan)
+    co = np.empty(len(master.data.vertices) * 3)
+    master.data.vertices.foreach_get("co", co)
+    co = co.reshape(-1, 3)
+    bins = np.clip(((co[:, h] - umin) / (umax - umin) * (N - 1)).astype(np.int64),
+                   0, N - 1)
+    np.maximum.at(sil, bins, co[:, 2])
+    # huecos: extender el borde conocido (fuera del modelo no hay silueta)
+    last = np.nan
+    for i in range(N):
+        if np.isnan(sil[i]):
+            sil[i] = last
         else:
-            keep = util.add_cone("MF_wkeep",
-                                 Vector((f["x"], f["y"],
-                                         (z_band0 + f["throat_top"]) * 0.5)),
-                                 neck_out, neck_out,
-                                 (f["throat_top"] + 1.0) - z_band0, 'Z', coll)
-        if keep is None:
-            continue
-        cut = util.add_box("MF_wcut",
-                           Vector((center.x, center.y,
-                                   (z_band0 + model_top) * 0.5)),
-                           Vector((big, big, model_top - z_band0 + 2.0)), coll)
-        util.boolean(cut, keep, 'DIFFERENCE')
-        util.remove_object(keep)
-        if cut.data.polygons:
-            util.boolean(rind, cut, 'DIFFERENCE')
-        util.remove_object(cut)
+            last = sil[i]
+    last = np.nan
+    for i in range(N - 1, -1, -1):
+        if np.isnan(sil[i]):
+            sil[i] = last
+        else:
+            last = sil[i]
+    sil = np.where(np.isnan(sil), mmn.z, sil)
 
-    # One thin slab across the parting plane, spanning the body + flange on both
-    # h sides, so a contoured lip is left on each half of the seam.
-    c = center.copy(); c[ai] = center[ai] + seam_off; c[h] = center[h]; c[2] = zc
-    size = Vector((0.0, 0.0, 0.0))
-    size[ai] = thickness                              # thin across the parting plane
-    size[h] = big                                     # full width on both sides
-    size[2] = zsz
-    clip = util.add_box("MF_wslab", c, size, coll)
-    util.boolean(rind, clip, 'INTERSECT')
-    util.remove_object(clip)
-    # The rind is dilated from the MODEL, so under a flat base it also reaches
-    # down by offset+width - across a Locking Base's socket band, where the
-    # clipped slab becomes a bar bridging the socket mouth along the seam. The
-    # cavity cutter (gap + socket) is carved later and normally eats it, but a
-    # heavy or awkward mesh can leave it standing: trim the rind by that cutter
-    # NOW, so wing material can never sit inside the cavity or the socket.
-    if cavity is not None and rind.data.polygons:
-        util.boolean(rind, cavity, 'DIFFERENCE')
-    util.remove_small_islands(rind)
-    if rind.data.polygons and _overlaps(rind, mold, coll):
-        util.boolean(mold, rind, 'UNION')
+    # Curvas: banda entre la pared (hundida 0.4 para soldar) y el contorno
+    # exterior = modelo + offset + ancho de ala, envolviendo la columna del
+    # embudo (su silueta hasta la boca) donde exista.
+    body_lo = sil + outer_offset - 0.4
+    O = sil + outer_offset + width
+    for f in (funnels or ()):
+        if f.get("apex_z", 0.0) <= 0.0:
+            continue
+        ratio = f.get("len_ratio", 1.0) if f.get("style") == 'SEMI_RECT' else 1.0
+        half = f["mouth_out"] * ratio + width
+        wrap = (np.abs(us - f["x"]) <= half) & (f["apex_z"] > O)
+        O[wrap] = f["apex_z"]
+    for _ in range(10):                        # suavizado del contorno
+        S = O.copy()
+        S[1:-1] = (O[:-2] + O[1:-1] + O[2:]) / 3.0
+        O = S
+    O = np.maximum(O, body_lo + 0.4)
+    O = np.maximum(O, z_floor + 0.2)
+    B = np.maximum(body_lo, z_floor)
+    O = np.maximum(O, B + 0.2)
+
+    bm = bmesh.new()
+    P = center[ai] + seam_off
+    y0, y1 = P - (thickness * 0.5 + 0.4), P + (thickness * 0.5 + 0.4)
+    inB0, inO0, inB1, inO1 = [], [], [], []
+    for i in range(N):
+        u = us[i]
+        inB0.append(bm.verts.new((u, y0, B[i])))
+        inO0.append(bm.verts.new((u, y0, O[i])))
+        inB1.append(bm.verts.new((u, y1, B[i])))
+        inO1.append(bm.verts.new((u, y1, O[i])))
+    for i in range(N - 1):
+        bm.faces.new((inB0[i], inB0[i + 1], inO0[i + 1], inO0[i]))    # cara frontal
+        bm.faces.new((inB1[i], inO1[i], inO1[i + 1], inB1[i + 1]))    # cara trasera
+        bm.faces.new((inO0[i], inO0[i + 1], inO1[i + 1], inO1[i]))    # techo
+        bm.faces.new((inB0[i], inB1[i], inB1[i + 1], inB0[i + 1]))    # fondo
+    bm.faces.new((inB0[0], inO0[0], inO1[0], inB1[0]))               # tapa u-
+    bm.faces.new((inB0[-1], inB1[-1], inO1[-1], inO0[-1]))           # tapa u+
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    band = util.new_mesh_object("MF_wing", bm, coll)
+
+    # El hueco del zócalo (Locking Base) no puede quedarse con material de ala.
+    if cavity is not None and band.data.polygons:
+        util.boolean(band, cavity, 'DIFFERENCE')
+    util.remove_small_islands(band)
+    if band.data.polygons and _overlaps(band, mold, coll):
+        util.boolean(mold, band, 'UNION')
         util.remove_small_islands(mold)               # drop any boolean sliver fragments
-    util.remove_object(rind)
+    util.remove_object(band)
 
 
 def add_radial_wings(mold, coll, master, outer_offset, width, thickness,
