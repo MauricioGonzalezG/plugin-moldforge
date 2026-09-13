@@ -1898,6 +1898,42 @@ def _profile_flange(mold, master, ai, h, center, mn, mx, outer_offset, width,
 
     rind = _wing_rind(master, outer_offset, width, props, coll, funnels, under)
 
+    # Sin "orejas": a la altura del tope del modelo el labio puede quedar más
+    # ancho que la boca del embudo (silueta del arco + offset + ala vs. una
+    # boca más estrecha) y asoma a sus lados como placas planas. En esa banda
+    # superior el labio se recorta a la silueta de la COLUMNA del propio
+    # embudo, de modo que el ala remata abrazando el spout.
+    band_h = max(thickness * 2.0, 8.0)
+    z_band0 = model_top - band_h
+    for f in (funnels or ()):
+        neck_out = f.get("neck_out")
+        if (neck_out is None or f.get("apex_z", 0.0) <= model_top
+                or f.get("throat_top", 0.0) <= z_band0):
+            continue
+        if f.get("style") == 'SEMI_RECT' and f.get("long_axis"):
+            keep = _stadium_solid("MF_wkeep", f["x"], f["y"],
+                                  z_band0 - 2.0, f["throat_top"] + 1.0,
+                                  neck_out, neck_out * f["len_ratio"],
+                                  neck_out, neck_out * f["len_ratio"],
+                                  f["long_axis"], coll)
+        else:
+            keep = util.add_cone("MF_wkeep",
+                                 Vector((f["x"], f["y"],
+                                         (z_band0 + f["throat_top"]) * 0.5)),
+                                 neck_out, neck_out,
+                                 (f["throat_top"] + 1.0) - z_band0, 'Z', coll)
+        if keep is None:
+            continue
+        cut = util.add_box("MF_wcut",
+                           Vector((center.x, center.y,
+                                   (z_band0 + model_top) * 0.5)),
+                           Vector((big, big, model_top - z_band0 + 2.0)), coll)
+        util.boolean(cut, keep, 'DIFFERENCE')
+        util.remove_object(keep)
+        if cut.data.polygons:
+            util.boolean(rind, cut, 'DIFFERENCE')
+        util.remove_object(cut)
+
     # One thin slab across the parting plane, spanning the body + flange on both
     # h sides, so a contoured lip is left on each half of the seam.
     c = center.copy(); c[ai] = center[ai] + seam_off; c[h] = center[h]; c[2] = zc
