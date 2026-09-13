@@ -1167,7 +1167,7 @@ def _derive_sizes(work, props):
         wing_key_size=getattr(props, "wing_key_size", 6.0),
         wing_key_height=getattr(props, "wing_key_height", 0.0),
         wing_key_spacing=getattr(props, "wing_key_spacing", 40.0),
-        wing_thickness=max(2.0 * shell, wall, 3.0),
+        wing_thickness=max(wall, 3.0),    # mismo grosor que la falda de base
         # Cleanup-remesh resolution. A pour box only prints a jacket (the real
         # model captures detail in the silicone), so a coarse, fast voxel keyed to
         # the wall is fine. A direct (SOLID) printed mold's cavity IS the cast

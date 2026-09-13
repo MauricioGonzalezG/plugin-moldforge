@@ -1887,7 +1887,12 @@ def _profile_flange(mold, master, ai, h, center, mn, mx, outer_offset, width,
     # machine where that cut silently fails, the fin shipped as a bar across the
     # socket mouth. No overhang, nothing to remove.
     z_lo = mmn.z + 0.3
-    z_hi = mmx.z + 2.0
+    # Las alas no suben por el embudo: el labio remata en el tope del modelo
+    # (la envoltura del embudo, incluida en el rind, queda fuera del slab).
+    model_top = util.world_bbox(master)[1].z
+    z_hi = min(mmx.z + 2.0, model_top)
+    if z_hi <= z_lo + 1.0:               # modelo por debajo de la base (no ocurre): sin tope
+        z_hi = mmx.z + 2.0
     zc = (z_lo + z_hi) * 0.5
     zsz = z_hi - z_lo
 

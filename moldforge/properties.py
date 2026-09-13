@@ -402,7 +402,7 @@ class MoldForgeProperties(bpy.types.PropertyGroup):
                     "3+ piezas radiales cada línea recibe un par de bridas atornilladas",
         default=True,
     )
-    wing_width: _dist("Ancho de las alas", 8.0,
+    wing_width: _dist("Ancho de las alas", 6.0,
                       "Cuánto se extienden las bridas de sujeción más allá de los "
                       "costados")
     wing_keys: EnumProperty(
