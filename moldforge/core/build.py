@@ -1896,6 +1896,7 @@ def _profile_flange(mold, master, ai, h, center, mn, mx, outer_offset, width,
     bins = np.clip(((co[:, h] - umin) / (umax - umin) * (N - 1)).astype(np.int64),
                    0, N - 1)
     np.maximum.at(sil, bins, co[:, 2])
+    sin_modelo = np.isnan(sil)      # columnas sin modelo: el ala baja hasta el fondo
     # huecos: extender el borde conocido (fuera del modelo no hay silueta)
     last = np.nan
     for i in range(N):
@@ -1930,6 +1931,7 @@ def _profile_flange(mold, master, ai, h, center, mn, mx, outer_offset, width,
     O = np.maximum(O, body_lo + 0.4)
     O = np.maximum(O, z_floor + 0.2)
     B = np.maximum(body_lo, z_floor)
+    B[sin_modelo] = mmn.z           # las alas asientan en el fondo del molde
     O = np.maximum(O, B + 0.2)
 
     bm = bmesh.new()
