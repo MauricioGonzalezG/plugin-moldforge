@@ -295,6 +295,13 @@ def _build_once(master, props, trim_ok=False):
                 and util.island_count(work) > 1):
             meshprep.voxel_remesh(work, min(p.detail_voxel, vox_cap))
 
+        # El remesh vóxel deja esquirlas de unos pocos vértices donde las
+        # superficies auto-intersectantes de una escultura se pellizcan
+        # (probadlo: un escultor hermético con solapes da 8-9 islas de 8
+        # vértices y ~0.1 mm alrededor del contorno). Son artefactos de remesh,
+        # no piezas del modelo: limpiarlas antes de la puerta de islas. Si
+        # queda algo GENUINAMENTE separado, la puerta falla igual (abajo).
+        util.remove_small_islands(work)
         if util.island_count(work) > 1:
             raise MoldGeometryError(
                 "The model is in separate pieces. Join them into one object, "
