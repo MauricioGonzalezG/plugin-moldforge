@@ -554,11 +554,13 @@ def _build_once(master, props, trim_ok=False):
 
         # Esquirlas booleanas: el corte contorneado puede desprender una
         # piececita flotante de una mitad (de un labio de ala, un diente del
-        # zócalo, el borde de un embudo). Misma regla que la puerta de la
-        # malla: descartar islas que sean BOTH pocas caras Y minúsculas — una
-        # mitad realmente rota sigue fallando la validación de abajo.
+        # zócalo, o una tira de la boca del embudo semirectangular: p. ej.
+        # 16 caras / 25 mm de largo / 2 mm de grosor). Umbral de tamaño algo
+        # más generoso que el por defecto (30% del diagonal de la pieza) —
+        # una mitad realmente rota (mucha geometría o mucho tamaño) sigue
+        # fallando la validación de abajo.
         for q in parts:
-            util.remove_small_islands(q)
+            util.remove_small_islands(q, size_frac=0.3)
 
         trimmed = False
         for label, part in zip("ABCDEFGH", parts):
