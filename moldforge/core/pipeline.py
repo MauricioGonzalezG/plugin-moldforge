@@ -552,6 +552,14 @@ def _build_once(master, props, trim_ok=False):
             parts.append(cup)                # suction-cup former, same treatment
         util.remove_object(work)            # the build proxy — never a displayed output
 
+        # Esquirlas booleanas: el corte contorneado puede desprender una
+        # piececita flotante de una mitad (de un labio de ala, un diente del
+        # zócalo, el borde de un embudo). Misma regla que la puerta de la
+        # malla: descartar islas que sean BOTH pocas caras Y minúsculas — una
+        # mitad realmente rota sigue fallando la validación de abajo.
+        for q in parts:
+            util.remove_small_islands(q)
+
         trimmed = False
         for label, part in zip("ABCDEFGH", parts):
             ok, reason = util.part_is_valid(part)
