@@ -1869,23 +1869,99 @@ def _wing_rind(master, outer_offset, width, props, coll, funnels=None, under=Non
 def _profile_flange(mold, master, ai, h, center, mn, mx, outer_offset, width,
                     thickness, props, coll, funnels=None, seam_off=0.0, cavity=None,
                     under=None):
-    """Enveloping wing wall of UNIFORM thickness (Ancho de las alas).
+    """Side flanges along the parting seam with a harmonious flowing outline.
 
-    The wing is the rind itself: a second wall that hugs the model and the
-    funnel all the way around, from the top of the mouth down past the base, so
-    the covers print as one solid piece with no flat sheets, no windows and no
-    thickness steps - and the locking-base socket stays clear (the rind is
-    trimmed by the socket pocket and by the cavity cutter, and the pipeline
-    carves the cavity again after the union)."""
-    rind = _wing_rind(master, outer_offset, width, props, coll, funnels, under)
-    if cavity is not None and rind.data.polygons:
-        util.boolean(rind, cavity, 'DIFFERENCE')
-    util.remove_small_islands(rind)
-    if rind.data.polygons and _overlaps(rind, mold, coll):
-        util.boolean(mold, rind, 'UNION')
+    The wing is built DIRECTLY as a lofted band in the parting plane: the outer
+    edge is the SMOOTHED silhouette of (model grown by offset+wing, plus the
+    funnel column it wraps), and the inner edge hugs the shell's outer surface
+    (silhouette + offset, sunk a hair for a clean weld). No boolean slab carve —
+    the fin is one watertight extrusion that rises to wrap the funnel mouth and
+    slides down with the body's contour to the base."""
+    import numpy as np
+    import bmesh
+    mmn, mmx = util.world_bbox(mold)
+    z_floor = mmn.z + 0.3                      # nunca por debajo de la base
+
+    N = 96
+    wmn, wmx = util.world_bbox(master)
+    umin = min(wmn[h], mmn[h]) - 2.0
+    umax = max(wmx[h], mmx[h]) + 2.0
+    us = np.linspace(umin, umax, N)
+
+    # Silueta del modelo (vista según el eje de corte): z máximo por columna.
+    sil = np.full(N, np.nan)
+    co = np.empty(len(master.data.vertices) * 3)
+    master.data.vertices.foreach_get("co", co)
+    co = co.reshape(-1, 3)
+    bins = np.clip(((co[:, h] - umin) / (umax - umin) * (N - 1)).astype(np.int64),
+                   0, N - 1)
+    np.maximum.at(sil, bins, co[:, 2])
+    sin_modelo = np.isnan(sil)      # columnas sin modelo: el ala baja hasta el fondo
+    # huecos: extender el borde conocido (fuera del modelo no hay silueta)
+    last = np.nan
+    for i in range(N):
+        if np.isnan(sil[i]):
+            sil[i] = last
+        else:
+            last = sil[i]
+    last = np.nan
+    for i in range(N - 1, -1, -1):
+        if np.isnan(sil[i]):
+            sil[i] = last
+        else:
+            last = sil[i]
+    sil = np.where(np.isnan(sil), mmn.z, sil)
+
+    # Curvas: banda entre la pared (hundida 0.4 para soldar) y el contorno
+    # exterior = modelo + offset + ancho de ala, envolviendo la columna del
+    # embudo (su silueta hasta la boca) donde exista.
+    body_lo = sil + outer_offset - 0.4
+    O = sil + outer_offset + width
+    for f in (funnels or ()):
+        if f.get("apex_z", 0.0) <= 0.0:
+            continue
+        ratio = f.get("len_ratio", 1.0) if f.get("style") == 'SEMI_RECT' else 1.0
+        half = f["mouth_out"] * ratio + width
+        wrap = (np.abs(us - f["x"]) <= half) & (f["apex_z"] > O)
+        O[wrap] = f["apex_z"]
+    for _ in range(10):                        # suavizado del contorno
+        S = O.copy()
+        S[1:-1] = (O[:-2] + O[1:-1] + O[2:]) / 3.0
+        O = S
+    O = np.maximum(O, body_lo + 0.4)
+    O = np.maximum(O, z_floor + 0.2)
+    B = np.maximum(body_lo, z_floor)
+    B[sin_modelo] = mmn.z           # las alas asientan en el fondo del molde
+    O = np.maximum(O, B + 0.2)
+
+    bm = bmesh.new()
+    P = center[ai] + seam_off
+    y0, y1 = P - (thickness * 0.5 + 0.4), P + (thickness * 0.5 + 0.4)
+    inB0, inO0, inB1, inO1 = [], [], [], []
+    for i in range(N):
+        u = us[i]
+        inB0.append(bm.verts.new((u, y0, B[i])))
+        inO0.append(bm.verts.new((u, y0, O[i])))
+        inB1.append(bm.verts.new((u, y1, B[i])))
+        inO1.append(bm.verts.new((u, y1, O[i])))
+    for i in range(N - 1):
+        bm.faces.new((inB0[i], inB0[i + 1], inO0[i + 1], inO0[i]))    # cara frontal
+        bm.faces.new((inB1[i], inO1[i], inO1[i + 1], inB1[i + 1]))    # cara trasera
+        bm.faces.new((inO0[i], inO0[i + 1], inO1[i + 1], inO1[i]))    # techo
+        bm.faces.new((inB0[i], inB1[i], inB1[i + 1], inB0[i + 1]))    # fondo
+    bm.faces.new((inB0[0], inO0[0], inO1[0], inB1[0]))               # tapa u-
+    bm.faces.new((inB0[-1], inB1[-1], inO1[-1], inO0[-1]))           # tapa u+
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    band = util.new_mesh_object("MF_wing", bm, coll)
+
+    # El hueco del zócalo (Locking Base) no puede quedarse con material de ala.
+    if cavity is not None and band.data.polygons:
+        util.boolean(band, cavity, 'DIFFERENCE')
+    util.remove_small_islands(band)
+    if band.data.polygons and _overlaps(band, mold, coll):
+        util.boolean(mold, band, 'UNION')
         util.remove_small_islands(mold)               # drop any boolean sliver fragments
-    util.remove_object(rind)
-
+    util.remove_object(band)
 
 
 def add_radial_wings(mold, coll, master, outer_offset, width, thickness,
