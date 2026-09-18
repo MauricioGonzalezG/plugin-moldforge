@@ -83,6 +83,8 @@ def split(mold, master, axis, props, coll, wall, wing_bolt_zs=None):
     # Parting plane position along the split axis (clamped so neither half vanishes).
     cap = (mx[ai] - mn[ai]) * 0.4
     off = max(min(getattr(props, "split_offset", 0.0), cap), -cap)
+    if "mf_wing_plane" in mold:
+        off = mold["mf_wing_plane"] - (mn[ai] + mx[ai]) * .5
 
     half_a = half_b = None
     contoured = getattr(props, "contoured", True) and not getattr(props, "block", False)

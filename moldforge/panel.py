@@ -198,7 +198,7 @@ def summary_wings(props):
         return "off"
     if props.wing_keys != 'NONE':
         return props.wing_keys.lower() + " llaves"
-    return f"{props.wing_width:g} mm"
+    return f"{props.wing_width:g} × {props.wing_thickness:g} mm"
 
 
 def summary_pour(props):
@@ -572,6 +572,7 @@ class MOLDFORGE_PT_wings(_MFSub, bpy.types.Panel):
         props = context.scene.moldforge
         layout.active = props.wings
         layout.prop(props, "wing_width", text="Ancho")
+        layout.prop(props, "wing_thickness", text="Grosor por ala")
         if props.parts_count == 2:
             layout.prop(props, "wing_keys", text="Alineación")
             if props.wing_keys != 'NONE':

@@ -1836,8 +1836,10 @@ def add_wings(mold, axis, coll, master, outer_offset, width, thickness,
             _profile_flange(mold, master, ai, h, center, mn, mx,
                             outer_offset, width, thickness, props, coll, funnels, off,
                             cavity, under)
-        return _drill_wing_bolts(mold, ai, h, center, mn, mx, width, thickness,
-                                 bolt_radius, axis, coll, _effective_bolts(props), off)
+        drilled = _drill_wing_bolts(mold, ai, h, center, mn, mx, width, thickness,
+                                    bolt_radius, axis, coll, _effective_bolts(props), off)
+        mold["mf_wing_plane"] = center[ai] + off
+        return drilled
     except Exception:
         cur = mold.data
         mold.data = backup
@@ -1889,102 +1891,80 @@ def _wing_rind(master, outer_offset, width, props, coll, funnels=None, under=Non
     return rind
 
 
+def _contour_flange_stock(mold, ai, plane, width, thickness, coll):
+    """Offset the actual shell section in the seam plane, then extrude it.
+
+    Width is a planar distance from the shell (including its base and funnel).
+    Thickness is the TOTAL mating pair; each half receives half after splitting.
+    No height-field approximation, bounding rectangle or extra thickness padding.
+    """
+    if width <= 0.0 or thickness <= 0.0:
+        return None
+    axes = [i for i in range(3) if i != ai]
+    section = util.duplicate_object(mold, "MF_wsection", coll)
+    try:
+        # Put the seam into XY so the same distance-field contour offset used
+        # for the locking base works for X, Y and horizontal seams alike.
+        for v in section.data.vertices:
+            co = v.co.copy()
+            v.co = (co[axes[0]], co[axes[1]], co[ai])
+        section.data.update()
+        loop = _cross_section_loop(section, plane)
+    finally:
+        util.remove_object(section)
+    if not loop:
+        raise RuntimeError("The wing seam does not intersect the mold")
+    span = max(max(p[i] for p in loop) - min(p[i] for p in loop) for i in (0, 1))
+    # Relative resolution also works in scenes measured in metres or inches.
+    voxel = max(min(width / 24.0, span / 200.0), span / 2000.0, width / 128.0)
+    stock = _vertical_prism(loop, -3 * voxel, 3 * voxel, coll, "MF_wstock")
+    try:
+        _sdf_offset(stock, width, voxel)
+        outline = _cross_section_loop(stock, 0.0)
+        if not outline:
+            raise RuntimeError("Cannot offset the wing contour")
+    finally:
+        util.remove_object(stock)
+    band = _vertical_prism(outline, plane - thickness * .5,
+                           plane + thickness * .5, coll, "MF_wing")
+    for v in band.data.vertices:
+        co = v.co.copy()
+        v.co[axes[0]], v.co[axes[1]], v.co[ai] = co.x, co.y, co.z
+    band.data.update()
+    meshprep.ensure_outward_normals(band)
+    if ai != 2:
+        # The flange ends flush with the base and the pour mouth.
+        mn, mx = util.world_bbox(mold)
+        bmn, bmx = util.world_bbox(band)
+        size = bmx - bmn + Vector((2, 2, 2))
+        size.z = mx.z - mn.z
+        center = (bmn + bmx) * .5
+        center.z = (mn.z + mx.z) * .5
+        clip = util.add_box("MF_wslab", center, size, coll)
+        try:
+            util.boolean(band, clip, 'INTERSECT')
+        finally:
+            util.remove_object(clip)
+    return band
+
+
 def _profile_flange(mold, master, ai, h, center, mn, mx, outer_offset, width,
                     thickness, props, coll, funnels=None, seam_off=0.0, cavity=None,
                     under=None):
-    """Side flanges along the parting seam with a harmonious flowing outline.
-
-    The wing is built DIRECTLY as a lofted band in the parting plane: the outer
-    edge is the SMOOTHED silhouette of (model grown by offset+wing, plus the
-    funnel column it wraps), and the inner edge hugs the shell's outer surface
-    (silhouette + offset, sunk a hair for a clean weld). No boolean slab carve —
-    the fin is one watertight extrusion that rises to wrap the funnel mouth and
-    slides down with the body's contour to the base."""
-    import numpy as np
-    import bmesh
-    mmn, mmx = util.world_bbox(mold)
-    z_floor = mmn.z + 0.3                      # nunca por debajo de la base
-
-    N = 96
-    wmn, wmx = util.world_bbox(master)
-    umin = min(wmn[h], mmn[h]) - 2.0
-    umax = max(wmx[h], mmx[h]) + 2.0
-    us = np.linspace(umin, umax, N)
-
-    # Silueta del modelo (vista según el eje de corte): z máximo por columna.
-    sil = np.full(N, np.nan)
-    co = np.empty(len(master.data.vertices) * 3)
-    master.data.vertices.foreach_get("co", co)
-    co = co.reshape(-1, 3)
-    bins = np.clip(((co[:, h] - umin) / (umax - umin) * (N - 1)).astype(np.int64),
-                   0, N - 1)
-    np.maximum.at(sil, bins, co[:, 2])
-    sin_modelo = np.isnan(sil)      # columnas sin modelo: el ala baja hasta el fondo
-    # huecos: extender el borde conocido (fuera del modelo no hay silueta)
-    last = np.nan
-    for i in range(N):
-        if np.isnan(sil[i]):
-            sil[i] = last
-        else:
-            last = sil[i]
-    last = np.nan
-    for i in range(N - 1, -1, -1):
-        if np.isnan(sil[i]):
-            sil[i] = last
-        else:
-            last = sil[i]
-    sil = np.where(np.isnan(sil), mmn.z, sil)
-
-    # Curvas: banda entre la pared (hundida 0.4 para soldar) y el contorno
-    # exterior = modelo + offset + ancho de ala, envolviendo la columna del
-    # embudo (su silueta hasta la boca) donde exista.
-    body_lo = sil + outer_offset - 0.4
-    O = sil + outer_offset + width
-    for f in (funnels or ()):
-        if f.get("apex_z", 0.0) <= 0.0:
-            continue
-        ratio = f.get("len_ratio", 1.0) if f.get("style") == 'SEMI_RECT' else 1.0
-        half = f["mouth_out"] * ratio + width
-        wrap = (np.abs(us - f["x"]) <= half) & (f["apex_z"] > O)
-        O[wrap] = f["apex_z"]
-    for _ in range(10):                        # suavizado del contorno
-        S = O.copy()
-        S[1:-1] = (O[:-2] + O[1:-1] + O[2:]) / 3.0
-        O = S
-    O = np.maximum(O, body_lo + 0.4)
-    O = np.maximum(O, z_floor + 0.2)
-    B = np.maximum(body_lo, z_floor)
-    B[sin_modelo] = mmn.z           # las alas asientan en el fondo del molde
-    O = np.maximum(O, B + 0.2)
-
-    bm = bmesh.new()
-    P = center[ai] + seam_off
-    y0, y1 = P - (thickness * 0.5 + 0.4), P + (thickness * 0.5 + 0.4)
-    inB0, inO0, inB1, inO1 = [], [], [], []
-    for i in range(N):
-        u = us[i]
-        inB0.append(bm.verts.new((u, y0, B[i])))
-        inO0.append(bm.verts.new((u, y0, O[i])))
-        inB1.append(bm.verts.new((u, y1, B[i])))
-        inO1.append(bm.verts.new((u, y1, O[i])))
-    for i in range(N - 1):
-        bm.faces.new((inB0[i], inB0[i + 1], inO0[i + 1], inO0[i]))    # cara frontal
-        bm.faces.new((inB1[i], inO1[i], inO1[i + 1], inB1[i + 1]))    # cara trasera
-        bm.faces.new((inO0[i], inO0[i + 1], inO1[i + 1], inO1[i]))    # techo
-        bm.faces.new((inB0[i], inB1[i], inB1[i + 1], inB0[i + 1]))    # fondo
-    bm.faces.new((inB0[0], inO0[0], inO1[0], inB1[0]))               # tapa u-
-    bm.faces.new((inB0[-1], inB1[-1], inO1[-1], inO0[-1]))           # tapa u+
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
-    band = util.new_mesh_object("MF_wing", bm, coll)
-
-    # El hueco del zócalo (Locking Base) no puede quedarse con material de ala.
-    if cavity is not None and band.data.polygons:
-        util.boolean(band, cavity, 'DIFFERENCE')
-    util.remove_small_islands(band)
-    if band.data.polygons and _overlaps(band, mold, coll):
-        util.boolean(mold, band, 'UNION')
-        util.remove_small_islands(mold)               # drop any boolean sliver fragments
-    util.remove_object(band)
+    """A constant-width flange around the shell at the actual parting plane."""
+    band = _contour_flange_stock(mold, ai, center[ai] + seam_off,
+                                 width, thickness, coll)
+    if band is None:
+        return
+    try:
+        for cutter in (cavity, under):
+            if cutter is not None and band.data.polygons:
+                util.boolean(band, cutter, 'DIFFERENCE')
+        if band.data.polygons:
+            util.boolean(mold, band, 'UNION')
+            util.remove_small_islands(mold)
+    finally:
+        util.remove_object(band)
 
 
 def add_radial_wings(mold, coll, master, outer_offset, width, thickness,
@@ -2007,27 +1987,40 @@ def add_radial_wings(mold, coll, master, outer_offset, width, thickness,
     center = (mn + mx) * 0.5
     backup = mold.data.copy()
     try:
-        big = (mx - mn).length * 2.0 + 10.0
-        zc = (mn.z + 0.3 + mx.z + 2.0) * 0.5      # a hair above the bottom, never below
-        zsz = (mx.z + 2.0) - (mn.z + 0.3)
-
-        rind = _wing_rind(master, outer_offset, width, props, coll, funnels, under)
-
-        for k in range(n):
-            theta = 2.0 * math.pi * k / n
-            d = Vector((math.cos(theta), math.sin(theta), 0.0))
-            wing = util.duplicate_object(rind, "MF_wing", coll)
-            # One-sided slab from the centre outward along the seam direction.
-            c = Vector((center.x, center.y, zc)) + d * (big * 0.5)
-            clip = util.add_box("MF_wslab", c, Vector((big, thickness, zsz)), coll,
-                                rot_z=theta)
-            util.boolean(wing, clip, 'INTERSECT')
-            util.remove_object(clip)
-            if wing.data.polygons and _overlaps(wing, mold, coll):
-                util.boolean(mold, wing, 'UNION')
-            util.remove_object(wing)
-        util.remove_object(rind)
-        util.remove_small_islands(mold)               # drop any boolean sliver fragments
+        reference = util.duplicate_object(mold, "MF_wreference", coll)
+        try:
+            for k in range(n):
+                theta = 2.0 * math.pi * k / n
+                transform = Matrix.Translation(center) @ Matrix.Rotation(theta, 4, 'Z')
+                local = util.duplicate_object(reference, "MF_wlocal", coll)
+                try:
+                    local.data.transform(transform.inverted())
+                    wing = _contour_flange_stock(local, 1, 0.0, width, thickness, coll)
+                finally:
+                    util.remove_object(local)
+                if wing is None:
+                    continue
+                try:
+                    wmn, wmx = util.world_bbox(wing)
+                    reach = max(abs(wmn.x), abs(wmx.x)) + 1.0
+                    clip = util.add_box("MF_wslab",
+                        Vector((reach * .5, (wmn.y + wmx.y) * .5, (wmn.z + wmx.z) * .5)),
+                        Vector((reach, wmx.y - wmn.y + 2, wmx.z - wmn.z + 2)), coll)
+                    try:
+                        util.boolean(wing, clip, 'INTERSECT')
+                    finally:
+                        util.remove_object(clip)
+                    wing.data.transform(transform)
+                    wing.data.update()
+                    if under is not None:
+                        util.boolean(wing, under, 'DIFFERENCE')
+                    if wing.data.polygons:
+                        util.boolean(mold, wing, 'UNION')
+                finally:
+                    util.remove_object(wing)
+        finally:
+            util.remove_object(reference)
+        util.remove_small_islands(mold)
 
         _drill_radial_bolts(mold, center, mn, mx, width, thickness, bolt_radius,
                             coll, n, _effective_bolts(props))
@@ -2081,9 +2074,8 @@ def _drill_radial_bolts(mold, center, mn, mx, width, thickness, bolt_radius,
 def add_horizontal_flange(mold, coll, master, outer_offset, width, thickness,
                           bolt_radius, props, hz, hole_angles):
     """Bolted flange ring around the body at the horizontal seam height ``hz`` —
-    the mating lip for a Horizontal Split. Built like the clamp wings (a thin
-    profile-hugging rind just outside the wall, grown out by ``width``) but
-    clipped to a horizontal band, so the lip follows the body all the way round.
+    the mating lip for a Horizontal Split. The shell section is offset in XY
+    by ``width`` and extruded to the requested mating-pair thickness.
 
     Vertical holes (sized by Bolt Diameter — fit threaded inserts in the lower
     lip and screw down through the upper) are drilled through the ring at
@@ -2095,22 +2087,13 @@ def add_horizontal_flange(mold, coll, master, outer_offset, width, thickness,
         mn, mx = util.world_bbox(mold)
         center = (mn + mx) * 0.5
         big = (mx - mn).length * 2.0 + 10.0
-        eps = min(0.5, 0.5 * outer_offset)
-        # Slightly different radii than the vertical wings' rind: where the ring
-        # crosses a wing the two would otherwise have perfectly coincident
-        # surfaces — degenerate input that makes the union shed garbage slivers.
-        inner = _dilate_solid(master, max(outer_offset - eps * 0.85, 0.05),
-                              "MF_wo", props, coll)
-        rind = _dilate_solid(master, outer_offset + width * 0.97, "MF_ww", props, coll)
-        util.boolean(rind, inner, 'DIFFERENCE')   # shell hugging just outside the wall
-        util.remove_object(inner)
-        clip = util.add_box("MF_wslab", Vector((center.x, center.y, hz)),
-                            Vector((big, big, thickness)), coll)
-        util.boolean(rind, clip, 'INTERSECT')
-        util.remove_object(clip)
-        if rind.data.polygons and _overlaps(rind, mold, coll):
-            util.boolean(mold, rind, 'UNION')
-        util.remove_object(rind)
+        band = _contour_flange_stock(mold, 2, hz, width, thickness, coll)
+        if band is None:
+            return
+        try:
+            util.boolean(mold, band, 'UNION')
+        finally:
+            util.remove_object(band)
 
         reach = (mx - mn).length + 10.0
         for ang in hole_angles:

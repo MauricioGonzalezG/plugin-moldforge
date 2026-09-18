@@ -402,9 +402,12 @@ class MoldForgeProperties(bpy.types.PropertyGroup):
                     "3+ piezas radiales cada línea recibe un par de bridas atornilladas",
         default=True,
     )
-    wing_width: _dist("Ancho de las alas", 6.0,
-                      "Cuánto se extienden las bridas de sujeción más allá de los "
-                      "costados")
+    wing_width: _dist("Ancho de las alas", 8.0,
+                      "Distancia desde el contorno exterior de la carcasa hasta "
+                      "el borde del ala, en el plano de partición")
+    wing_thickness: _dist("Grosor de las alas", 2.5,
+                          "Grosor de CADA ala desde la cara de unión. Dos alas "
+                          "acopladas suman el doble de este valor", mn=0.4)
     wing_keys: EnumProperty(
         name="Alineación de alas",
         description="Llaves de alineación en las caras de acople de las alas: una "

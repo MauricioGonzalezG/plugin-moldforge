@@ -23,7 +23,7 @@ import types
 # through untouched.
 LENGTH_PROPS = frozenset({
     "wall_thickness", "shell_wall", "sprue_radius", "funnel_height", "vent_radius",
-    "flange_width", "fit_clearance", "wing_width", "bolt_diameter",
+    "flange_width", "fit_clearance", "wing_width", "wing_thickness", "bolt_diameter",
     "wing_key_size", "wing_key_height", "wing_key_spacing", "cup_diameter", "cup_depth",
     "split_offset", "split_z_offset", "max_print_height", "support_clearance",
     "sprue_x", "sprue_y", "voxel_size",

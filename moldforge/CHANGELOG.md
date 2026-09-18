@@ -2,6 +2,19 @@
 
 All notable changes. Versions are the add-on `version` in `blender_manifest.toml`.
 
+## 0.40.6 — contoured wings with independent width and thickness
+
+- Default wing width is 8 mm; default thickness is 2.5 mm per printed wing.
+- Wings now follow a distance offset of the actual shell section at each seam,
+  including the base and funnel. Replaces the height-bin approximation that
+  propagated missing samples and produced rectangular panels on some models.
+- Adds **Grosor por ala**, in millimetres per printed half, independently of
+  shell thickness. Removes the hidden thickness padding. Width is measured
+  outward in the seam plane; radial and horizontal flanges share this geometry.
+- Keeps the parting plane aligned with the wings even when thick wings change
+  the shell's bounding box. Tests measure contour distance, each half's
+  thickness, manifold geometry and unit conversion.
+
 ## 0.40.5 — continuous outer walls around the locking base
 
 - The locking plinth and outer skirt now use the same section of the model,
