@@ -2,6 +2,20 @@
 
 All notable changes. Versions are the add-on `version` in `blender_manifest.toml`.
 
+## 0.40.5 — continuous outer walls around the locking base
+
+- The locking plinth and outer skirt now use the same section of the model,
+  independent of their requested height. Previously, flared or recessed bases
+  could supply different outlines to the socket and its surrounding wall.
+- Footprint growth uses a signed-distance offset instead of Solidify on a thin
+  slice. The final outline is extruded vertically instead of stretching the
+  slice's bevels and offset folds into the wall. This prevents the toothed
+  socket from breaking through the skirt on the reproduced irregular bases.
+- Blender regression tests cover circular and lobed contours, steep base
+  slopes, short/tall bases, thin/thick walls, cavity subtraction and splitting,
+  plus a complete locking jacket. Run `tests/test_locking_wall.py` in Blender
+  background mode from the repository root.
+
 ## 0.40.4 — the dual-density core has no sharp ridges
 
 The user's next screenshot: a scaled sculpt whose core, now smooth in the

@@ -168,7 +168,16 @@ def _regrow_footprint(slab, distance, sh, props, coll):
     """Grow a thin footprint slab outward by ``distance`` in 2D (a Minkowski offset, so
     concave outlines stay clean) and return a fresh thin slab with vertical walls.
     Consumes ``slab``."""
-    grown = _dilate_solid(slab, distance, "MF_plg", props, coll)
+    # Solidify on a thin slice is not a 2D offset: steep sides and concave
+    # corners can fold or stretch differently at the plinth and skirt margins.
+    # Remeshing those folds does not restore containment. Offset a straight,
+    # closed prism on a distance field instead; its middle section is a true
+    # planar dilation. Keep several voxels through the source slab.
+    # A near-zero base margin must not allocate a near-zero voxel grid.
+    voxel = max(min(getattr(props, "detail_voxel", 1.0), distance / 12.0,
+                    sh / 6.0), sh / 12.0)
+    grown = util.duplicate_object(slab, "MF_plg", coll)
+    _sdf_offset(grown, distance, voxel)
     util.remove_object(slab)
     gmn, gmx = util.world_bbox(grown)
     midz = (gmn.z + gmx.z) * 0.5
@@ -188,24 +197,38 @@ def _footprint_prism(model, grow, z0, z1, props, coll, name):
     Shared by the plinth body (before its teeth are cut) and the jacket's smooth outer
     skirt (so the teeth never telegraph to the shell's outside)."""
     mn, mx = util.world_bbox(model)
-    cx, cy = (mn.x + mx.x) * 0.5, (mn.y + mx.y) * 0.5
-    SZ = (mx - mn).length * 2.0 + 10.0
-    sh = max(min((z1 - z0) * 0.15, 2.0), 0.4)
-    base = util.duplicate_object(model, name, coll)
-    slab = util.add_box(name + "_x", Vector((cx, cy, mn.z + sh * 0.5)), Vector((SZ, SZ, sh)), coll)
-    util.boolean(base, slab, 'INTERSECT')
-    util.remove_object(slab)
-    util.remove_small_islands(base)
+    # Both the plinth and skirt MUST start from the same model section. Deriving
+    # its height from the requested prism height sampled different contours on
+    # a flared/recessed base, so a larger margin could produce a smaller skirt.
+    sh = 2.0
+    section_z = mn.z + min((mx.z - mn.z) * 0.01, 0.2)
+    loop = _cross_section_loop(model, section_z)
+    if not loop:
+        raise RuntimeError("Cannot find a closed outline for the locking base")
+    base = _vertical_prism(loop, section_z - sh * 0.5,
+                           section_z + sh * 0.5, coll, name)
     if grow > 0.0:
         base = _regrow_footprint(base, grow, sh, props, coll)
     fmn, fmx = util.world_bbox(base)
-    fzc = (fmn.z + fmx.z) * 0.5
-    fth = max(fmx.z - fmn.z, 0.2)
-    base.data.transform(Matrix.Translation((0.0, 0.0, -fzc)))
-    base.data.transform(Matrix.Diagonal((1.0, 1.0, (z1 - z0) / fth, 1.0)))
-    base.data.transform(Matrix.Translation((0.0, 0.0, (z0 + z1) * 0.5)))
-    base.data.update()
-    return base
+    loop = _cross_section_loop(base, (fmn.z + fmx.z) * 0.5)
+    util.remove_object(base)
+    if not loop:
+        raise RuntimeError("Cannot grow a closed outline for the locking base")
+    return _vertical_prism(loop, z0, z1, coll, name)
+
+
+def _vertical_prism(loop, z0, z1, coll, name):
+    """Extrude one XY loop without stretching a bevel into the side wall."""
+    bm = bmesh.new()
+    lower = [bm.verts.new((x, y, z0)) for x, y in loop]
+    upper = [bm.verts.new((x, y, z1)) for x, y in loop]
+    for i in range(len(loop)):
+        j = (i + 1) % len(loop)
+        bm.faces.new((lower[i], lower[j], upper[j], upper[i]))
+    bm.faces.new(list(reversed(lower)))
+    bm.faces.new(upper)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    return util.new_mesh_object(name, bm, coll)
 
 
 def _cross_section_loop(obj, z):

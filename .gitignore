@@ -1,0 +1,22 @@
+# Python / Blender runtime caches
+__pycache__/
+*.py[cod]
+
+# Generated extension packages and local backups
+/dist/
+
+# Local test and tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local Python environments
+.venv/
+venv/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
