@@ -377,6 +377,19 @@ def _build_once(master, props, trim_ok=False):
         axis = split.resolve_axis(p, shape_ref)   # AUTO picks the best-releasing pull axis
         undercut = util.undercut_fraction(shape_ref, axis)
         multipart = getattr(p, "parts_count", 2) >= 3
+        # Ubicación MANUAL del embudo sincronizada con la partición: el plano de
+        # corte se desplaza hasta el centro del embudo, para que el corte lo
+        # divida exactamente por la mitad (el Desplazamiento del usuario se
+        # ignora en este modo: manda la posición del embudo).
+        if (funnels and not multipart
+                and getattr(p, "sprue_place", 'TOP') == 'MANUAL'):
+            f0 = funnels[0]
+            ai = {'X': 0, 'Y': 1}[axis]
+            cmn, cmx = util.world_bbox(mold)
+            c0 = (cmn + cmx) * 0.5
+            cap = (cmx[ai] - cmn[ai]) * 0.4
+            p.split_offset = max(min((f0["x"] if ai == 0 else f0["y"]) - c0[ai],
+                                     cap), -cap)
         radial_center = None        # centre the radial wings used; reused by the split
         wing_bolt_zs = None         # bolt heights on 2-part wings; wing keys go between
         yield (0.55, "adding clamp wings")
