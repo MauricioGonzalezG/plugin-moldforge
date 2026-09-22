@@ -735,7 +735,7 @@ class MoldForgeProperties(bpy.types.PropertyGroup):
             ('MANUAL', "Manual X/Y", "Escribe tú la posición del embudo como "
              "desplazamiento X/Y desde el centro de la huella del modelo"),
         ],
-        default='TOP',
+        default='MANUAL',
     )
     sprue_x: FloatProperty(
         name="Embudo X", default=0.0,
