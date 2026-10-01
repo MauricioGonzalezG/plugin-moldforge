@@ -137,12 +137,15 @@ def _parts_summary(objs, tray=False):
                  if n.startswith("MF_Mold_") and not n.startswith(("MF_Mold_Plug",
                                                                     "MF_Mold_Base",
                                                                     "MF_Mold_Cup")))
-    if tray:
+    if any(o.get("mf_one_face") for o in objs):
+        bits = ["caja de una cara"]
+    elif tray:
         bits = ["bandeja"] if shells else []
     else:
         bits = [f"{shells} carcasa{'s' if shells != 1 else ''}"] if shells else []
     if any(n.startswith("MF_Positive") for n in names):
-        bits.append("positivo")
+        bits.append("figura separable" if any(o.get("mf_one_face_insert") for o in objs)
+                    else "positivo")
     if any(n.startswith("Core_Master") for n in names):
         bits.append("núcleo")
     if any(n.startswith("MF_Mold_Base") for n in names):
@@ -261,6 +264,10 @@ class MOLDFORGE_PT_main(_MFPanel, bpy.types.Panel):
         _field(col, "Tipo de molde").prop(props, "box_style", text="")
         if props.box_style == 'SOLID':
             _field(col, "Forma").prop(props, "solid_shape", expand=True)
+        if props.box_style == 'ONE_FACE':
+            self._one_face(layout, props)
+            self._generate(layout, context, ok)
+            return
         if tray:
             _field(col, "Modo").prop(props, "tray_mode", text="")
             self._tray(layout, props, context)
@@ -335,6 +342,24 @@ class MOLDFORGE_PT_main(_MFPanel, bpy.types.Panel):
         self._generate(layout, context, ok)
 
     @staticmethod
+    def _one_face(layout, props):
+        col = layout.column(align=True)
+        _field(col, "Lado del detalle").prop(props, "one_face_up", text="")
+        _field(col, "Separación del borde").prop(props, "one_face_margin", text="")
+        _field(col, "Grosor de pared").prop(props, "one_face_wall", text="")
+        _field(col, "Grosor del fondo").prop(props, "one_face_floor", text="")
+        _field(col, "Altura sobre figura").prop(props, "one_face_depth", text="")
+        _field(col, "Precisión del contorno").prop(props, "one_face_resolution", text="")
+        layout.prop(props, "one_face_separate")
+        if props.one_face_separate:
+            col = layout.column(align=True)
+            _field(col, "Profundidad del encaje").prop(props, "one_face_seat_depth", text="")
+            _field(col, "Holgura por lado").prop(props, "one_face_clearance", text="")
+            layout.label(text="Caja e inserto se exportan por separado", icon='INFO')
+        else:
+            layout.label(text="Figura integrada en el fondo de la caja", icon='INFO')
+
+    @staticmethod
     def _tray(layout, props, context):
         """The tray / stamp settings, inline: the whole mold is this one section."""
         col = layout.column(align=True)
@@ -391,7 +416,12 @@ class MOLDFORGE_PT_result(_MFPanel, bpy.types.Panel):
         layout.label(text=_parts_summary(objs, tray), icon='OUTLINER_COLLECTION')
 
         col = layout.column(align=True)
-        if tray:
+        if props.box_style == 'ONE_FACE':
+            _vol_row(col, "Silicona a verter", props.last_silicone_volume,
+                     props.silicone_density, mpu)
+            _vol_row(col, "Plástico de las piezas", props.last_plastic_volume,
+                     props.plastic_density, mpu)
+        elif tray:
             _vol_row(col, "Silicona a verter", props.last_silicone_volume,
                      props.silicone_density, mpu)
             _vol_row(col, "Plástico de la bandeja", props.last_plastic_volume,
@@ -464,7 +494,7 @@ class MOLDFORGE_PT_shell(_MFSub, bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.moldforge.box_style != 'TRAY'
+        return context.scene.moldforge.box_style not in {'TRAY', 'ONE_FACE'}
 
     def draw_header_preset(self, context):
         self._summary(self.layout, summary_shell(context.scene.moldforge))
@@ -522,7 +552,7 @@ class MOLDFORGE_PT_parting(_MFSub, bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.moldforge.box_style != 'TRAY'
+        return context.scene.moldforge.box_style not in {'TRAY', 'ONE_FACE'}
 
     def draw_header_preset(self, context):
         self._summary(self.layout, summary_parting(context.scene.moldforge))
@@ -556,7 +586,7 @@ class MOLDFORGE_PT_wings(_MFSub, bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         props = context.scene.moldforge
-        if props.box_style == 'TRAY':
+        if props.box_style in {'TRAY', 'ONE_FACE'}:
             return False
         is_block = (props.box_style == 'SOLID' and props.solid_shape == 'BLOCK')
         return not (is_block and props.parts_count >= 3)
@@ -595,7 +625,7 @@ class MOLDFORGE_PT_pour(_MFSub, bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.moldforge.box_style != 'TRAY'
+        return context.scene.moldforge.box_style not in {'TRAY', 'ONE_FACE'}
 
     def draw_header(self, context):
         self.layout.prop(context.scene.moldforge, "sprue", text="")
@@ -670,7 +700,7 @@ class MOLDFORGE_PT_printer(_MFSub, bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.moldforge.box_style != 'TRAY'
+        return context.scene.moldforge.box_style not in {'TRAY', 'ONE_FACE'}
 
     def draw_header(self, context):
         self.layout.prop(context.scene.moldforge, "printer_fit", text="")
@@ -721,6 +751,8 @@ class MOLDFORGE_PT_mesh(_MFSub, bpy.types.Panel):
         layout.prop(props, "voxel_safe", text="Remesh seguro")
         if props.voxel_safe:
             layout.prop(props, "voxel_size", text="Tamaño de vóxel")
+            if props.box_style == 'ONE_FACE':
+                layout.label(text="Solo repara mallas abiertas; conserva el relieve", icon='INFO')
 
 
 class MOLDFORGE_PT_export(_MFSub, bpy.types.Panel):

@@ -150,7 +150,7 @@ class MoldForgeProperties(bpy.types.PropertyGroup):
     # --- Mold type ------------------------------------------------------ #
     box_style: EnumProperty(
         name="Tipo de molde",
-        description="Lo que MoldForge genera — las dos funciones realmente distintas",
+        description="Tipo de caja o molde que MoldForge genera",
         items=[
             ('POUR_BOX', "Caja de vertido de silicona",
              "Carcasa impresa en la que viertes silicona líquida — la silicona es el "
@@ -166,6 +166,10 @@ class MoldForgeProperties(bpy.types.PropertyGroup):
              "superior queda abierta: insértalo y vierte silicona encima para un sello, "
              "talla el fondo para una colada directa, o imprime solo el marco para un "
              "objeto real. Sin corte, alas ni embudo"),
+            ('ONE_FACE', "Caja de una cara",
+             "Caja abierta con paredes que siguen todo el borde exterior de la "
+             "figura. Integra el relieve o imprímelo por separado con un hundido "
+             "de encaje en el fondo"),
         ],
         default='POUR_BOX',
     )
@@ -243,6 +247,48 @@ class MoldForgeProperties(bpy.types.PropertyGroup):
     tray_depth: _dist("Profundidad de vertido", 5.0,
                       "Cuánta silicona queda sobre el punto más alto del objeto "
                       "(el grosor de la placa)", mn=0.0, soft=40.0)
+
+    # --- One-face contour box ------------------------------------------ #
+    one_face_up: EnumProperty(
+        name="Lado del detalle",
+        description="Cara que queda hacia la abertura de la caja",
+        items=[('AUTO', "Auto", "Recuesta la figura con el detalle hacia arriba"),
+               ('Z', "+Z arriba", "El detalle está en la cara +Z"),
+               ('X', "+X arriba", "El detalle está en la cara +X"),
+               ('Y', "+Y arriba", "El detalle está en la cara +Y"),
+               ('-Z', "−Z arriba", "El detalle está en la cara −Z"),
+               ('-X', "−X arriba", "El detalle está en la cara −X"),
+               ('-Y', "−Y arriba", "El detalle está en la cara −Y")],
+        default='AUTO',
+    )
+    one_face_margin: _dist("Separación del borde", 6.0,
+                          "Espacio entre la silueta exterior de la figura y la pared",
+                          mn=0.0, soft=30.0)
+    one_face_wall: _dist("Grosor de pared", 2.5,
+                        "Grosor de la pared vertical de la caja", mn=0.4, soft=8.0)
+    one_face_floor: _dist("Grosor del fondo", 3.0,
+                         "Material sólido bajo la figura o bajo el hundido de encaje",
+                         mn=0.4, soft=15.0)
+    one_face_depth: _dist("Altura sobre la figura", 5.0,
+                         "Altura de la pared por encima del punto más alto del relieve",
+                         mn=0.0, soft=40.0)
+    one_face_separate: BoolProperty(
+        name="Imprimir figura por separado",
+        description="Quita la figura de la caja y genera un inserto imprimible con "
+                    "base plana y su hundido de encaje. La vista explosionada "
+                    "permite ver las dos piezas",
+        default=False,
+    )
+    one_face_seat_depth: _dist("Profundidad del encaje", 2.0,
+                              "Profundidad del hundido y de la base del inserto",
+                              mn=0.2, soft=10.0)
+    one_face_clearance: _dist("Holgura de encaje", 0.2,
+                             "Espacio lateral por lado entre el inserto y su alojamiento",
+                             mn=0.0, soft=1.0)
+    one_face_resolution: _dist("Precisión del contorno", 0.15,
+                              "Paso de muestreo de la silueta; menor conserva más "
+                              "detalle del borde. Se limita en modelos muy grandes",
+                              mn=0.03, soft=0.5)
 
     # --- Sizes (absolute, scene units / mm) ----------------------------- #
     wall_thickness: _dist("Grosor de silicona / pared", 4.0,

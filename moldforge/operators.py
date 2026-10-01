@@ -98,7 +98,15 @@ class MOLDFORGE_OT_generate(bpy.types.Operator):
             ml = units.to_ml(v, mpu)
             return f"{ml:,.0f} ml ({ml * props.silicone_density:,.0f} g)"
 
-        if props.box_style == 'TRAY':
+        if props.box_style == 'ONE_FACE':
+            summary = "Caja de una cara lista: el borde sigue la silueta exterior. "
+            if result.get("one_face_separate"):
+                summary += ("Figura separada (MF_Positive) y hundido de encaje en "
+                            "la caja (MF_Mold_A). Reensamblar coloca el inserto. ")
+            else:
+                summary += "Figura integrada en el fondo. "
+            summary += f"Silicona a verter ≈ {_ml(result['silicone_volume'])}."
+        elif props.box_style == 'TRAY':
             mode = getattr(props, "tray_mode", 'EMBED')
             if mode == 'STAMP':
                 summary = (f"Molde de sello listo. Vierte ≈ {_ml(result['silicone_volume'])} "
@@ -117,7 +125,7 @@ class MOLDFORGE_OT_generate(bpy.types.Operator):
         else:
             summary = f"Molde listo. Material ≈ {_ml(result['silicone_volume'])}."
 
-        if props.box_style != 'TRAY' and getattr(props, "parts_count", 2) >= 3:
+        if props.box_style not in {'TRAY', 'ONE_FACE'} and getattr(props, "parts_count", 2) >= 3:
             summary += f" Cortado en {props.parts_count} cuñas radiales."
 
         if props.box_style == 'POUR_BOX' and props.base_style == 'LOCK':
@@ -155,7 +163,8 @@ class MOLDFORGE_OT_generate(bpy.types.Operator):
             if result.get("plug_note"):
                 summary += f" {result['plug_note'][0].upper()}{result['plug_note'][1:]}."
 
-        cup_ok = (props.base_style == 'OPEN' and not getattr(props, "base_plate", False)) \
+        cup_ok = (props.box_style not in {'TRAY', 'ONE_FACE'}
+                  and props.base_style == 'OPEN' and not getattr(props, "base_plate", False)) \
             or (props.base_style == 'LOCK' and props.box_style == 'POUR_BOX')
         if cup_ok and getattr(props, "suction_cup", False):
             summary += (" Formador de ventosa añadido (MF_Mold_Cup) - llena invertido y "
@@ -201,7 +210,9 @@ class MOLDFORGE_OT_generate(bpy.types.Operator):
                          "dentro como una segunda carcasa - las herramientas de vaciado "
                          "del slicer dejarán la base sólida; repara o remesh el modelo "
                          "para una unión limpia")
-        if result.get("remeshed"):
+        if result.get("remeshed") and props.box_style == 'ONE_FACE':
+            notes.append("se repararon bordes abiertos de la figura con remesh fino")
+        elif result.get("remeshed"):
             notes.append("la cavidad del molde directo se talló desde una copia "
                          "auto-remeshada (el detalle fino de la cavidad se suaviza); el "
                          "positivo conserva todo el detalle")
@@ -219,6 +230,7 @@ class MOLDFORGE_OT_generate(bpy.types.Operator):
             try:
                 if not os.path.isdir(directory):
                     raise OSError(f"{directory!r} no es una carpeta")
+                _restore_exploded(bpy.data.collections.get(mf_util.COLLECTION_NAME))
                 to_export = list(result["parts"])
                 to_export.extend(result.get("positive_parts")   # prints too (see button)
                                  or ([result["positive"]] if result.get("positive")

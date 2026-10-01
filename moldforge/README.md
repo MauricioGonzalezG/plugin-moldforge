@@ -5,7 +5,7 @@ piece mold with an auto‑oriented, self‑registering split, sprue + air vents,
 mounting base and silicone/cast/plastic volume **and weight** estimates, or a
 one‑part open tray for flat & relief objects. Exports STL.
 
-Three output types (**Mold Type** in the panel):
+Four output types (**Mold Type** in the panel):
 
 - **Silicone Pour Box** (default) — prints a thin-walled **jacket** that covers
   your master with a gap; you nest the master inside and pour liquid silicone
@@ -24,6 +24,23 @@ Three output types (**Mold Type** in the panel):
   over it for a flexible stamp/mold, or print a **Frame** to drop a real object
   in and pour around it. Pick a **Rectangular** or material‑saving **Hug
   (rounded)** outline. No split, wings or funnel.
+- **Caja de una cara / One-face Box** — an open box whose vertical walls follow
+  the complete exterior silhouette of a relief, including concave shapes and
+  overhanging edges. The relief is integrated into the floor by default. Enable
+  **Imprimir figura por separado** to make a separate `MF_Positive` insert and
+  leave its matching recess in `MF_Mold_A`. The insert gains a flat locating base;
+  **Profundidad del encaje** controls its depth and **Holgura de encaje** adds
+  lateral clearance per side (default 0.2 mm). The configured floor thickness
+  remains solid **below** the recess. Both parts appear side by side; use
+  **Reensamblar** to seat the insert or **Exportar STL** to export each part.
+  Choose the detail face (Auto or ±X/±Y/±Z), wall/floor thickness, border gap and
+  height above the figure. **Precisión del contorno** is the silhouette sampling
+  step (default 0.15 mm, bounded to about 1024 samples across very large models).
+  Interior holes stay part of the relief rather than creating extra box walls.
+  Closed reliefs keep their full detail even with Safe Remesh enabled; that
+  option only repairs non-manifold geometry for this type, at fine resolution.
+  A removable insert needs a continuous footprint; disconnected shapes should
+  first be joined on a common base. No split, wings or funnel.
 
 > Original, GPL-licensed implementation built on Blender's public Python API
 > (`bmesh`, modifiers, depsgraph). It does not contain or derive from any other
@@ -63,6 +80,10 @@ your original model is hidden (the positive takes its place on screen - unhide
 the original from the outliner whenever you want it back).
 Export with **Export Mold Parts**, or tick **Export after generate**. A heavy
 build runs with a wait cursor and a progress note so it never looks frozen.
+
+For **Caja de una cara**, the integrated mode exports only the box with its
+relief. The separate mode exports the box and the insert as two STL files.
+Source geometry and modifiers are preserved; the original object is hidden.
 
 ## Sizes are in millimetres
 
@@ -142,6 +163,10 @@ mold), the **printed plastic**, and the **cast material** volume — in millilit
    - *Tray*: an open box around the object's footprint (rectangular, or a rounded
      hug of the outline); the object is laid flat, unioned into the floor (Embed)
      or left out (Frame), and the top is left open — no split, wings or funnel.
+   - *One-face Box*: project all evaluated mesh triangles onto the chosen face,
+     offset the resulting 2D silhouette and extrude its outer boundary into
+     vertical walls. Integrate the relief, or add a flat locating base to a
+     separate insert and cut a clearance pocket in the thickened floor.
 3. **Sprue & vents** — the solid funnel spout(s) are unioned on first (so wings can
    run up them), then bored through into the cavity *after* the wings, so the bore
    is always clear. Vents are cut from the cavity's high points, kept clear of the

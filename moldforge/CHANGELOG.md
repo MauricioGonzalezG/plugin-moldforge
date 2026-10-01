@@ -2,6 +2,25 @@
 
 All notable changes. Versions are the add-on `version` in `blender_manifest.toml`.
 
+## 0.41.0 — Caja de una cara with a removable figure
+
+- Adds **Caja de una cara**, an open pour box following the complete projected
+  exterior silhouette, including concavities and overhanging edges. Interior
+  holes do not create additional walls; no rectangular fallback loses the shape.
+- Integrates the relief into the floor, or creates a separate printable figure
+  with a flat locating base and a matching recess. Encaje depth and clearance
+  per side are adjustable; floor thickness is retained below the pocket.
+- Shows the separate figure alongside the empty box. Reassemble seats it;
+  manual and automatic STL export include precisely the printable parts.
+- Adds face selection (including negative axes), border, wall, floor, height
+  and contour resolution controls, all converted correctly from millimetres.
+  Uses evaluated source geometry, including modifiers, without editing it.
+  Closed reliefs retain full detail with the default Safe Remesh setting;
+  only open geometry is repaired using a fine voxel size.
+- Blender regression tests cover triangular, concave and oval shapes, full
+  projection, holes, pocket/insert collision, source preservation, orientation,
+  unit conversion, manual/automatic STL export and failed-build cleanup.
+
 ## 0.40.6 — contoured wings with independent width and thickness
 
 - Default wing width is 8 mm; default thickness is 2.5 mm per printed wing.

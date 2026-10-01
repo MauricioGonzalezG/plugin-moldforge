@@ -13,7 +13,7 @@ import bpy
 from mathutils import Matrix, Vector
 
 from . import constants as C
-from . import util, meshprep, build, sprue, split, volume
+from . import util, meshprep, build, sprue, split, volume, one_face
 
 
 class MoldGeometryError(RuntimeError):
@@ -56,11 +56,11 @@ def prebuild_warnings(master, props):
     if master is None or master.type != 'MESH' or not master.data.polygons:
         return out
     faces = len(master.data.polygons)
-    if getattr(props, "box_style", None) == 'TRAY':
+    if getattr(props, "box_style", None) in {'TRAY', 'ONE_FACE'}:
         mn, mx = util.world_bbox(master)
         d = sorted((mx.x - mn.x, mx.y - mn.y, mx.z - mn.z))
         if d[2] > 1e-6 and d[0] > C.TRAY_FLAT_RATIO * d[2]:
-            out.append("this object isn't flat — a Tray captures one face only; a "
+            out.append("this object isn't flat — an open box captures one face only; a "
                        "Pour Box or Direct Printed Mold suits a chunky 3D object better")
         if faces > C.HEAVY_FACES:
             out.append(f"heavy mesh (~{faces // 1000}k faces) — the build may take a while")
@@ -90,6 +90,8 @@ def staged_build(master, props, auto_recover=True):
     most diagnostic error."""
     # The tray / open-pour type is a one-part build with its own short path — no
     # split, wings, funnel or recovery ladder.
+    if getattr(props, "box_style", None) == 'ONE_FACE':
+        return (yield from _build_one_face(master, props))
     if getattr(props, "box_style", None) == 'TRAY':
         if getattr(props, "tray_mode", 'EMBED') == 'STAMP':
             return (yield from _build_stamp(master, props))
@@ -957,6 +959,89 @@ def _build_stamp(design, props):
                 util.remove_object(o)
             except Exception:
                 pass
+
+
+def _build_one_face(master, props):
+    """A complete silhouette box, optionally paired with a removable figure."""
+    _validate_master(master)
+    coll = util.ensure_collection()
+    for obj in list(coll.objects):
+        if obj is not master and obj.name.startswith("MF_"):
+            util.remove_object(obj)
+    work = None
+    try:
+        yield (0.10, "preparando la figura")
+        # Capture the visible/evaluated geometry, including the source modifiers.
+        deps = bpy.context.evaluated_depsgraph_get()
+        me = bpy.data.meshes.new_from_object(master.evaluated_get(deps), depsgraph=deps)
+        work = bpy.data.objects.new("MF_OneFaceModel", me)
+        coll.objects.link(work)
+        work.matrix_world = master.matrix_world.copy()
+        mn, mx = util.world_bbox(work)
+        home = (mn + mx) * .5
+        meshprep.center_object(work)
+        if props.heal:
+            meshprep.heal(work)
+        else:
+            meshprep.ensure_outward_normals(work)
+        if props.decimate:
+            meshprep.decimate(work, props.decimate_ratio)
+        # A contour box needs no coarse shell proxy. Keep a watertight relief at
+        # full detail even when the global Safe Remesh default is on; only repair
+        # genuinely open geometry, with a voxel no coarser than the contour step.
+        remeshed = False
+        if props.voxel_safe and util.has_nonmanifold(work):
+            mn, mx = util.world_bbox(work)
+            cap = min(mx - mn) * .25
+            meshprep.voxel_remesh(work, min(props.voxel_size, props.one_face_resolution, cap))
+            remeshed = True
+        yield (0.30, "orientando la cara de detalle")
+        up = props.one_face_up
+        _orient_tray(work, up.lstrip('-'))
+        if up.startswith('-'):
+            work.data.transform(Matrix.Rotation(math.pi, 4, 'X'))
+            work.data.update()
+        meshprep.center_object(work)
+        home.z += util.world_bbox(work)[0].z
+        yield (0.50, "siguiendo el borde exterior y construyendo la caja")
+        pan, info = one_face.build_box(work, props, coll)
+        yield (0.90, "comprobando la caja y el encaje")
+        for obj in ([pan, work] if props.one_face_separate else [pan]):
+            ok, reason = util.part_is_valid(obj)
+            if not ok:
+                raise MoldGeometryError(f"La pieza {obj.name} {reason}. "
+                                        "Prueba Preparación de malla > Remesh seguro.")
+        pan.location = home
+        positive = work if props.one_face_separate else None
+        if positive is not None:
+            positive.location = home
+            positive["mf_one_face_insert"] = True
+            # Show the empty pocket alongside its insert immediately. Reassemble
+            # and Export use the existing exact-home exploded-preview mechanism.
+            pmn, pmx = util.world_bbox(pan)
+            imn, imx = util.world_bbox(positive)
+            pan["mf_explode"] = list(home)
+            positive["mf_explode"] = list(home)
+            positive.location.x += (pmx.x - pmn.x + imx.x - imn.x) * .5 + props.one_face_wall * 2
+            positive.location.z -= props.one_face_floor
+        else:
+            util.remove_object(work)
+        _try_hide(master)
+        return {
+            "parts": [pan], "positive": positive, "skin": None,
+            "cavity_volume": info["cast_volume"],
+            "silicone_volume": info["silicone_volume"],
+            "plastic_volume": info["plastic_volume"],
+            "remeshed": remeshed, "trimmed": False,
+            "undercut": 0.0, "axis": 'Z',
+            "one_face_separate": props.one_face_separate,
+            "contour_step": info["contour_step"],
+        }
+    except Exception:
+        for obj in list(coll.objects):
+            if obj is not master and obj.name.startswith("MF_"):
+                util.remove_object(obj)
+        raise
 
 
 def _build_tray(master, props):

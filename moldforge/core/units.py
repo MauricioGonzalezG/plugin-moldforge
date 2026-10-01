@@ -30,6 +30,8 @@ LENGTH_PROPS = frozenset({
     "lock_height", "lock_margin", "lock_tooth_depth", "lock_tolerance",
     "tray_wall", "tray_floor", "tray_margin", "tray_depth",
     "stamp_width", "stamp_relief", "core_wall",
+    "one_face_margin", "one_face_wall", "one_face_floor", "one_face_depth",
+    "one_face_seat_depth", "one_face_clearance", "one_face_resolution",
 })
 
 
