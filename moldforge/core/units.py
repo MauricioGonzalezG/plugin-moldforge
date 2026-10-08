@@ -32,6 +32,7 @@ LENGTH_PROPS = frozenset({
     "stamp_width", "stamp_relief", "core_wall",
     "one_face_margin", "one_face_wall", "one_face_floor", "one_face_depth",
     "one_face_seat_depth", "one_face_clearance", "one_face_resolution",
+    "one_face_notch_width", "one_face_notch_depth", "one_face_notch_height",
 })
 
 

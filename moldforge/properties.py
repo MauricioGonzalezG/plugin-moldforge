@@ -289,6 +289,27 @@ class MoldForgeProperties(bpy.types.PropertyGroup):
                               "Paso de muestreo de la silueta; menor conserva más "
                               "detalle del borde. Se limita en modelos muy grandes",
                               mn=0.03, soft=0.5)
+    one_face_notch: BoolProperty(
+        name="Agregar muesca de desmoldeo",
+        description="Forma un saliente hueco e inclinado hacia fuera de la pared, "
+                    "con la boca abierta hasta arriba para crear un agarre en la silicona",
+        default=False,
+    )
+    one_face_notch_width: _dist("Ancho de muesca", 14.0,
+                               "Ancho del saliente y su abertura en la pared",
+                               mn=1.0, soft=30.0)
+    one_face_notch_depth: _dist("Salida de muesca", 4.0,
+                               "Cuánto sobresale la rampa hacia fuera de la pared",
+                               mn=0.5, soft=15.0)
+    one_face_notch_height: _dist("Altura de muesca", 6.0,
+                                "Altura del saliente bajo el borde; la abertura limita el nivel de vertido",
+                                mn=0.5, soft=15.0)
+    one_face_notch_angle: FloatProperty(
+        name="Posición de muesca",
+        description="Posición alrededor de la caja orientada: 0° derecha (+X), "
+                    "90° atrás (+Y), 180° izquierda y 270° delante",
+        default=0.0, min=0.0, max=360.0,
+    )
 
     # --- Sizes (absolute, scene units / mm) ----------------------------- #
     wall_thickness: _dist("Grosor de silicona / pared", 4.0,

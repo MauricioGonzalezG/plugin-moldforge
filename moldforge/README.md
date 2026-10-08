@@ -36,9 +36,21 @@ Four output types (**Mold Type** in the panel):
   Choose the detail face (Auto or ±X/±Y/±Z), wall/floor thickness, border gap and
   height above the figure. **Precisión del contorno** is the silhouette sampling
   step (default 0.15 mm, bounded to about 1024 samples across very large models).
+  **Agregar muesca de desmoldeo** builds a broad hollow ramp projecting
+  outward from the upper wall, with a curved mouth open through the top rim.
+  The roof is removed across the full useful pocket depth; the sloped floor,
+  side cheeks and outer end remain. Set width, outward projection, height
+  below the rim and angular position (0 degrees right, 90 back, 180 left,
+  270 front, after orienting the detail face). The effective pour limit is
+  the lowest open edge of the notch. Silicone estimates use that level and
+  include the grip pocket. The option is off by default and works with
+  integrated or separate figures; the floor and insert remain intact.
   Interior holes stay part of the relief rather than creating extra box walls.
   Closed reliefs keep their full detail even with Safe Remesh enabled; that
   option only repairs non-manifold geometry for this type, at fine resolution.
+  Joined overlapping solids (such as text on a common base) are united on a
+  working copy. Unions retry with Exact if the fast solver leaves fragments;
+  the source mesh and fine relief are preserved without voxel remeshing.
   A removable insert needs a continuous footprint; disconnected shapes should
   first be joined on a common base. No split, wings or funnel.
 

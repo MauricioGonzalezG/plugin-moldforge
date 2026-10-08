@@ -139,6 +139,8 @@ def _parts_summary(objs, tray=False):
                                                                     "MF_Mold_Cup")))
     if any(o.get("mf_one_face") for o in objs):
         bits = ["caja de una cara"]
+        if any(o.get("mf_one_face_notch") for o in objs):
+            bits.append("muesca")
     elif tray:
         bits = ["bandeja"] if shells else []
     else:
@@ -358,6 +360,15 @@ class MOLDFORGE_PT_main(_MFPanel, bpy.types.Panel):
             layout.label(text="Caja e inserto se exportan por separado", icon='INFO')
         else:
             layout.label(text="Figura integrada en el fondo de la caja", icon='INFO')
+        layout.separator()
+        layout.prop(props, "one_face_notch")
+        if props.one_face_notch:
+            col = layout.column(align=True)
+            _field(col, "Ancho de muesca").prop(props, "one_face_notch_width", text="")
+            _field(col, "Salida hacia fuera").prop(props, "one_face_notch_depth", text="")
+            _field(col, "Altura de muesca").prop(props, "one_face_notch_height", text="")
+            _field(col, "Posición (°)").prop(props, "one_face_notch_angle", text="")
+            layout.label(text="Conserva la altura útil de vertido", icon='INFO')
 
     @staticmethod
     def _tray(layout, props, context):

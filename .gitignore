@@ -20,3 +20,8 @@ venv/
 .DS_Store
 Thumbs.db
 Desktop.ini
+/stl-studio
+
+# Local model diagnostics, Blender copies and generated inspection images
+/diagnostics/
+/diagnostics

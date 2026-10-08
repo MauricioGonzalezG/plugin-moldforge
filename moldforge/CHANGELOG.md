@@ -2,6 +2,56 @@
 
 All notable changes. Versions are the add-on `version` in `blender_manifest.toml`.
 
+## 0.41.5 - Joined reliefs become one printable solid
+
+- Caja de una cara unites overlapping closed components on its working copy,
+  preserving the source, contour and fine relief without voxel remeshing.
+- Floor and locating-base unions verify the output and retry with Exact from
+  the original geometry when Manifold leaves closed fragments. Truly floating
+  detail still fails validation rather than being dropped.
+- Regression coverage includes joined reliefs, independent reliefs connected
+  by the floor, failed-union recovery, source preservation and cleanup. Verified
+  against the real 15-component CANDLE NEW YEAR model in both figure modes.
+
+## 0.41.4 - Demolding pocket fully open on top
+
+- Removes the roof above the entire useful grip pocket, leaving an open
+  channel through the rim, with a curved floor, side cheeks and closed end.
+- The inclined exterior and original rim elsewhere retain their shape.
+  Silicone capacity is recalculated up to the lowest open spill edge,
+  including the pocket and actual submerged relief/insert geometry.
+
+## 0.41.3 - Outward demolding ramp in the upper wall
+
+- Replaces the vertical eyelet with a broad outward hood, a sloped outside
+  and an oval mouth below the rim. The cavity ends inside the hood, with
+  closed outside and side cheeks, to cast a silicone grip without leaking.
+- Adds separate width, outward projection and height controls. Only a small
+  local lip rises above the rim. The rest of the rim, pour level, floor,
+  relief and separate insert keep their dimensions.
+- Silicone estimates include the grip pocket; printable geometry is checked
+  on rectangles, curved/concave contours and real scene-unit conversions.
+
+## 0.41.2 - Raised demolding tab with a closed window
+
+- Replaces the open semicircular rim cut with a local raised trapezoid tab
+  and a closed oval window.
+- The tab follows the wall contour. A top bridge and bottom sill surround
+  the window; the rest of the rim keeps its original height. Pour height,
+  silicone estimates, floor and removable insert stay unchanged.
+- The previous depth field now controls tab height above the rim.
+
+## 0.41.1 — Rounded silicone demolding notch
+
+- Adds **Agregar muesca de desmoldeo** to Caja de una cara, with width, depth
+  and position around the contour. The rounded opening passes through the wall
+  and works with integrated and separate figures, including concave contours.
+- Raises the rim by the notch depth to preserve the requested silicone fill
+  height above the relief. The recess, floor and insert remain intact. Silicone
+  estimates exclude the unfillable space above the notch; plastic uses the
+  final printable geometry. Width/depth honor scene-unit conversion.
+- The option is off by default; existing one-face boxes retain their geometry.
+
 ## 0.41.0 — Caja de una cara with a removable figure
 
 - Adds **Caja de una cara**, an open pour box following the complete projected

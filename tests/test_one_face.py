@@ -28,6 +28,7 @@ def at(obj, x, y, z):
 
 
 def reset_settings():
+    props.one_face_notch = False
     props.one_face_up = 'Z'
     props.one_face_separate = False
     props.one_face_margin = 4
@@ -184,7 +185,7 @@ for system, scale, length, factor in [('NONE', 1, 'ADAPTIVE', 1),
     converted = units.build_props(props, bpy.context.scene)
     for key in ('one_face_wall', 'one_face_floor', 'one_face_margin',
                 'one_face_depth', 'one_face_seat_depth', 'one_face_clearance',
-                'one_face_resolution'):
+                'one_face_resolution', 'one_face_notch_width', 'one_face_notch_depth'):
         assert abs(getattr(converted, key) - getattr(props, key) * factor) < 1e-6
     src = make_model(loops['triangle'], 'units')
     src.data.transform(Matrix.Diagonal((factor, factor, factor, 1)))
