@@ -2,6 +2,19 @@
 
 All notable changes. Versions are the add-on `version` in `blender_manifest.toml`.
 
+## 0.41.6 - Round funnels respect the requested radius
+
+- Redondo uses the exact throat radius and mouth flare, including mouths wider
+  than the original mold footprint. Removes its live input clamp, percentage
+  caps and edge cap; increasing the radius now enlarges the generated circle.
+- Shares sizing between the panel, top funnels and near-top pour markers.
+  Oversized toggles remain available for semi-rectangular funnels, which retain
+  automatic fitting. Round controls show the dimensions directly.
+- Builds the round spout as one closed loft and aligns its inner taper with
+  the outer neck, keeping wide funnels attached. Extends the bore above the rim
+  without reducing the requested mouth diameter.
+- Keeps the joined-relief and Exact union recovery added in 0.41.5.
+
 ## 0.41.5 - Joined reliefs become one printable solid
 
 - Caja de una cara unites overlapping closed components on its working copy,

@@ -21,6 +21,7 @@ import bpy
 from .core import constants as C
 from .core import units
 from .core import util as mf_util
+from .core.sprue import funnel_radii
 from .properties import mold_caps
 
 _VERSION = None
@@ -66,15 +67,13 @@ def _funnel_flags(props, caps):
 
     ``over`` = an Oversized toggle exceeds what the mold can carry; ``fit`` = the
     typed value was auto-fitted down. Returns ``None`` without a measured mold."""
+    if props.funnel_style == 'ROUND':
+        neck, mouth = funnel_radii(props, 0.0)
+        return neck, mouth, False, False
     if not caps:
         return None
     hm = caps["half_min"]
-    # Oversized = fully manual: the typed value is built exactly.
-    neck = (props.sprue_radius if props.big_throat
-            else min(props.sprue_radius, hm * C.THROAT_CAP))
-    mouth = (neck * props.sprue_flare if props.big_mouth
-             else min(neck * props.sprue_flare, hm * C.MOUTH_CAP))
-    mouth = max(mouth, neck)
+    neck, mouth = funnel_radii(props, hm)
     over = ((props.big_throat and neck > hm * C.THROAT_CAP + 1e-6)
             or (props.big_mouth and mouth > hm * C.MOUTH_CAP + 1e-6))
     fit = ((not props.big_throat and props.sprue_radius > hm * C.THROAT_CAP + 1e-6)
@@ -302,8 +301,9 @@ class MOLDFORGE_PT_main(_MFPanel, bpy.types.Panel):
         if props.sprue:
             row = _field(col, "Radio de garganta")
             row.prop(props, "sprue_radius", text="")
-            row.prop(props, "big_throat", text="", icon='FULLSCREEN_ENTER',
-                     toggle=True)
+            if props.funnel_style != 'ROUND':
+                row.prop(props, "big_throat", text="", icon='FULLSCREEN_ENTER',
+                         toggle=True)
         if props.parts_count == 2:
             # No text="" here: on an expanded enum that blanks the buttons.
             _field(col, "Corte").prop(props, "split_axis", expand=True)
@@ -652,13 +652,17 @@ class MOLDFORGE_PT_pour(_MFSub, bpy.types.Panel):
         col = layout.column()
         col.active = props.sprue
         col.prop(props, "funnel_style", text="Estilo")
-        col.prop(props, "sprue_radius", text="Radio de garganta")
+        row = col.row(align=True)
+        row.prop(props, "sprue_radius", text="Radio de garganta")
+        if props.funnel_style != 'ROUND':
+            row.prop(props, "big_throat", text="", icon='FULLSCREEN_ENTER', toggle=True)
         if props.funnel_style == 'SEMI_RECT':
             col.prop(props, "sprue_rect_len", text="Largo/Ancho")
         col.prop(props, "funnel_height", text="Altura")
         row = col.row(align=True)
         row.prop(props, "sprue_flare", text="Apertura de boca")
-        row.prop(props, "big_mouth", text="", icon='FULLSCREEN_ENTER', toggle=True)
+        if props.funnel_style != 'ROUND':
+            row.prop(props, "big_mouth", text="", icon='FULLSCREEN_ENTER', toggle=True)
         col.prop(props, "sprue_place", text="Ubicación")
         if props.sprue_place == 'MANUAL':
             col.prop(props, "sprue_x", text="X")

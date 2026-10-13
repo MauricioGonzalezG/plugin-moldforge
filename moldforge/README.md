@@ -113,9 +113,11 @@ millimetres, not only the "1 unit = 1 mm" convention. Specifically:
   metres), so a 3 mm wall is genuinely 3 mm. The panel shows the basis it's using
   (e.g. *1 unit = 25.4 mm*).
 
-The defaults suit print‑scale models (~20–200 mm); the sprue/vents are auto‑capped
-so they can't blow out a small mold — and the **Oversized Throat / Oversized Mouth**
-toggles switch the funnel to **fully manual** (exactly the typed sizes, no cap at
+The defaults suit print‑scale models (~20–200 mm). **Round** funnels use the exact
+**Throat Radius**, with a mouth radius of throat × **Mouth Flare**, even when the
+mouth extends beyond the original mold footprint. Semi-rectangular funnels and
+vents auto-fit; **Oversized Throat / Oversized Mouth** switch the semi-rectangular
+funnel to **fully manual** (exactly the typed sizes, no cap at
 all) when the auto fit isn't what you want.
 
 ## Parameters
@@ -149,7 +151,7 @@ all) when the auto fit isn't what you want.
 | Clamp | **Clamp Wings** + **Wing Width / Wing Thickness** | Flanges follow the actual shell contour at the seam, including the base and funnel. Width is the outward distance in the seam plane. Thickness is **per printed wing**: two mating wings together measure twice this value. Both settings are in millimetres and independent of the shell wall. |
 | Clamp | **Wing Alignment** + **Key Size / Height / Spacing** | `None` · `Cone` · `Half Sphere` · `Half Cone` alignment keys on the wing mating faces: a raised key on one half seats into a matching socket in the other (grown by **Fit Clearance**), so the bolted halves can't shear. **Key Size** sets their diameter; **Key Height** how far they stand out (0 = auto, capped by the wing lip — taller punches the socket through the wing as a hole, which still aligns; Half Sphere caps at a hemisphere); **Key Spacing** spreads them along the seam at that pitch (default every 40 mm), dodging the bolt holes |
 | Clamp | **Bolt Diameter** + **Auto Bolts** / **Bolts / Side** | Size of the clamp/flange bolt holes. Off by default (no holes: clamp with clips or bands). Tick **Auto Bolts** to place holes by flange height, or set an exact count per side/seam |
-| Sprue | **Sprue** + **Throat Radius** + **Funnel Height** + **Mouth Flare** | A real raised pour **funnel** that opens into the cavity. **Throat Radius** is the narrow bottom (the hole into the mold); the mouth is throat × **Mouth Flare** (1.0 = straight tube, up to 4× = wide catch funnel); **Funnel Height** is how far it stands proud. Sizes auto‑fit the mold; tick **Oversized Throat / Oversized Mouth** for **fully manual** funnels (exactly the typed sizes, no cap — you own the result). The panel shows the exact throat Ø / mouth Ø being built |
+| Sprue | **Sprue** + **Throat Radius** + **Funnel Height** + **Mouth Flare** | A real raised pour **funnel** that opens into the cavity. **Throat Radius** is the narrow bottom (the hole into the mold); the mouth radius is throat × **Mouth Flare** (1.0 = straight tube, up to 8× = wide catch funnel); **Funnel Height** is how far it stands proud. **Round** uses the exact requested radii, including mouths wider than the mold. Semi-rectangular sizes auto-fit; **Oversized Throat / Oversized Mouth** bypass those limits. The panel shows throat Ø / mouth Ø |
 | Sprue | **Pour Points** + **Center Sprue** | 1–4 funnels (more helps fill tall figures); centre them on the seam instead of the model's high point |
 | Sprue | **Air Vents** + **Vent Radius** | 0–8 thin channels from the cavity's high points to the outside |
 | Prep | **Heal / Decimate / Safe Remesh** | Clean up messy, heavy, or non‑manifold meshes |

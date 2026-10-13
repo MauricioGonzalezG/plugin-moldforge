@@ -15,48 +15,53 @@ from . import constants as C
 from . import util
 
 
+def funnel_radii(props, half_min, *, wall=0.0, edge=None, edge_long=None):
+    """Round funnels use the requested radii; semi-rectangular ones auto-fit.
+
+    Shared with the panel so displayed and generated sizes follow the same rule.
+    All distances use the caller's units (millimetres in the UI, scene units in
+    the builder). Round mouths may extend beyond the mold's original footprint.
+    """
+    manual_round = getattr(props, 'funnel_style', 'ROUND') == 'ROUND'
+    neck = (props.sprue_radius if manual_round or getattr(props, 'big_throat', False)
+            else min(props.sprue_radius, C.THROAT_CAP * half_min))
+    mouth = neck * max(getattr(props, 'sprue_flare', 2.4), 1.0)
+    if not manual_round and not getattr(props, 'big_mouth', False):
+        mouth = min(mouth, C.MOUTH_CAP * half_min)
+        if edge is not None:
+            mouth = min(mouth, edge - wall)
+        if edge_long is not None:
+            ratio = max(getattr(props, 'sprue_rect_len', 2.0), 1.0)
+            mouth = min(mouth, edge_long / ratio - wall)
+    return neck, max(mouth, neck)
+
+
 def _funnel_at(mold, master, pt, props):
     """Funnel sizing + geometry for a pour point ``pt`` (world). Returns a dict.
 
     The cavity is carved AFTER the funnel is unioned on (see the pipeline), so the
     throat opens by construction — no auto-narrowing, no model-clearance juggling.
-    The throat (bottom) radius is the user's Throat Radius, auto-capped to the
-    mold's size — unless Oversized Throat is on, which is FULLY MANUAL: exactly the
-    typed radius, no cap at all. Same for the mouth (throat x Flare) with Oversized
-    Mouth. The straight neck makes a clean circular hole, and the flare starts
+    Round throat and mouth sizes are fully manual: exactly the typed radius and
+    radius x Flare. Semi-rectangular sizes auto-fit unless the corresponding
+    Oversized toggle is on. The straight neck makes a clean circular hole, and the flare starts
     above the cavity ceiling's high point so it never cuts the shell off-round."""
     mn, mx = util.world_bbox(mold)
     mold_half_min = max(min(mx.x - mn.x, mx.y - mn.y) * 0.5, 1e-4)
-    big_throat = getattr(props, "big_throat", False)
-    sprue_r = (props.sprue_radius if big_throat                  # manual: exact value
-               else min(props.sprue_radius, C.THROAT_CAP * mold_half_min))
-    flare = max(getattr(props, "sprue_flare", 2.4), 1.0)        # 1.0 = straight tube
-    big_mouth = getattr(props, "big_mouth", False)
     style = getattr(props, "funnel_style", 'ROUND')
     semi = style == 'SEMI_RECT'
     ratio = max(getattr(props, "sprue_rect_len", 2.0), 1.0) if semi else 1.0
     long_axis = 'X' if (mx.x - mn.x) >= (mx.y - mn.y) else 'Y'
-    # Mouth auto-caps at MOUTH_CAP * half-width so it stays on the mold; Oversized
-    # Mouth is fully manual (throat x Flare exactly) and may overhang (UI warns).
-    mouth_r = (sprue_r * flare if big_mouth
-               else min(sprue_r * flare, C.MOUTH_CAP * mold_half_min))
     jacket = props.box_style == 'POUR_BOX'   # hollow shell (gap around model)
     gap = getattr(props, "silicone_gap", props.wall_thickness)
     wall = max(props.shell_wall if jacket else props.wall_thickness, 1.2)
     offset = gap + (props.shell_wall if jacket else 0.0)
     breach = max(gap * 0.5, 1e-4)
 
-    # Keep the mouth on the mold edge unless Oversized Mouth allows overhang.
     edge = min(pt.x - mn.x, mx.x - pt.x, pt.y - mn.y, mx.y - pt.y)
-    if not big_mouth:
-        mouth_r = min(mouth_r, edge - wall)
-    if semi and not big_mouth:
-        # El extremo largo del estadio también debe quedar sobre el molde:
-        # el semilargo exterior es (boca + pared) x ratio.
-        edge_long = (min(pt.x - mn.x, mx.x - pt.x) if long_axis == 'X'
-                     else min(pt.y - mn.y, mx.y - pt.y))
-        mouth_r = min(mouth_r, edge_long / ratio - wall)
-    mouth_r = max(mouth_r, sprue_r)
+    edge_long = ((min(pt.x - mn.x, mx.x - pt.x) if long_axis == 'X'
+                  else min(pt.y - mn.y, mx.y - pt.y)) if semi else None)
+    sprue_r, mouth_r = funnel_radii(props, mold_half_min, wall=wall,
+                                    edge=edge, edge_long=edge_long)
 
     # The cavity ceiling follows the model surface raised by ``gap``. Probe the
     # MODEL (always present; the box is still solid here) under the neck for the
@@ -136,20 +141,11 @@ def _marker_funnel_at(mold, master, pt, props):
     column misses the mold entirely (marker parked outside the footprint)."""
     mn, mx = util.world_bbox(mold)
     mold_half_min = max(min(mx.x - mn.x, mx.y - mn.y) * 0.5, 1e-4)
-    big_throat = getattr(props, "big_throat", False)
-    sprue_r = (props.sprue_radius if big_throat
-               else min(props.sprue_radius, C.THROAT_CAP * mold_half_min))
-    flare = max(getattr(props, "sprue_flare", 2.4), 1.0)
-    big_mouth = getattr(props, "big_mouth", False)
-    mouth_r = (sprue_r * flare if big_mouth
-               else min(sprue_r * flare, C.MOUTH_CAP * mold_half_min))
     jacket = props.box_style == 'POUR_BOX'
     gap = getattr(props, "silicone_gap", props.wall_thickness)
     wall = max(props.shell_wall if jacket else props.wall_thickness, 1.2)
     edge = min(pt.x - mn.x, mx.x - pt.x, pt.y - mn.y, mx.y - pt.y)
-    if not big_mouth:
-        mouth_r = min(mouth_r, edge - wall)
-    mouth_r = max(mouth_r, sprue_r)
+    sprue_r, mouth_r = funnel_radii(props, mold_half_min, wall=wall, edge=edge)
 
     inv = mold.matrix_world.inverted()
     hit, loc, _n, _i = mold.ray_cast(
@@ -297,6 +293,29 @@ def _stadium_solid(name, cx, cy, z0, z1, w0, l0, w1, l1, long_axis, coll,
     return util.new_mesh_object(name, bm, coll)
 
 
+def _round_loft(name, x, y, profile, coll):
+    """One closed loft with shared rings, rather than touching cones.
+
+    The two cones' independently rounded Z coordinates can leave a microscopic
+    gap outside the original mold footprint. Sharing vertices welds the neck to
+    the cup at every radius without changing its profile or mouth dimensions.
+    """
+    bm = bmesh.new()
+    rows = []
+    for z, radius in profile:
+        rows.append([bm.verts.new((x + radius * math.cos(i * math.tau / 48),
+                                   y + radius * math.sin(i * math.tau / 48), z))
+                     for i in range(48)])
+    bm.faces.new(rows[0])
+    bm.faces.new(rows[-1])
+    for lower, upper in zip(rows, rows[1:]):
+        for i in range(48):
+            j = (i + 1) % 48
+            bm.faces.new((lower[i], lower[j], upper[j], upper[i]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    return util.new_mesh_object(name, bm, coll)
+
+
 def add_funnel_spouts(mold, master, props, coll):
     """Phase 1: union the solid funnel spout(s) (narrow neck -> wide mouth) onto the
     mold and return their geometry (a list) so the wings can run up them.
@@ -379,19 +398,11 @@ def add_funnel_spouts(mold, master, props, coll):
         # full width at the throat (where it welds to the shell and opens the hole) and
         # narrows going down, so the deep part stays slim and inside the cavity, which
         # is carved away. Paired with the flared cup, the spout is a pair of cones.
-        neck = util.add_cone(
-            "MF_funnel", Vector((f["x"], f["y"], (f["base_z"] + t_z) * 0.5)),
-            neck_base, f["neck_out"], t_z - f["base_z"], 'Z', coll,
-        )
-        util.boolean(mold, neck, 'UNION')
-        util.remove_object(neck)
-        if f["apex_z"] - t_z > 0.1:
-            cup = util.add_cone(
-                "MF_funnel", Vector((f["x"], f["y"], (t_z + f["apex_z"]) * 0.5)),
-                f["neck_out"], f["mouth_out"], f["apex_z"] - t_z, 'Z', coll,
-            )
-            util.boolean(mold, cup, 'UNION')
-            util.remove_object(cup)
+        spout = _round_loft('MF_funnel', f['x'], f['y'],
+                            ((f['base_z'], neck_base), (t_z, f['neck_out']),
+                             (f['apex_z'], f['mouth_out'])), coll)
+        util.boolean(mold, spout, 'UNION', solver='EXACT')
+        util.remove_object(spout)
     return funnels
 
 
@@ -446,6 +457,23 @@ def bore_funnels_and_vents(mold, master, props, funnels, coll):
         t_z = min(max(funnel["throat_top"], bore_bottom + 0.5), bore_top - 0.5)
         bore_base = (funnel["sprue_r"] if funnel.get("marker")   # straight shaft
                      else max(funnel["sprue_r"] * C.NECK_TAPER, 0.4))
+        if funnel.get('style') == 'ROUND':
+            # Follow the outer neck on the SAME Z planes. Starting the taper at
+            # bore_bottom widened it too early: for a large throat it cut through
+            # the entire body before the spout widened, severing the funnel.
+            outer_base = max(funnel['neck_out'] * C.NECK_TAPER, funnel['wall'])
+            inner_base = max(outer_base - funnel['wall'], .4)
+            slope = (funnel['sprue_r'] - inner_base) / (t_z - funnel['base_z'])
+            bottom_radius = max(inner_base - slope * (funnel['base_z'] - bore_bottom), .4)
+            top_radius = funnel['mouth_r'] + (funnel['mouth_r'] - funnel['sprue_r']) \
+                * (bore_top - funnel['apex_z']) / (funnel['apex_z'] - t_z)
+            bore = _round_loft('MF_funnelbore', funnel['x'], funnel['y'],
+                               ((bore_bottom, bottom_radius),
+                                (funnel['base_z'], inner_base),
+                                (t_z, funnel['sprue_r']), (bore_top, top_radius)), coll)
+            util.boolean(mold, bore, 'DIFFERENCE', solver='EXACT')
+            util.remove_object(bore)
+            continue
         if funnel.get("style") == 'SEMI_RECT' and not funnel.get("marker"):
             # Taladro semirectangular: mismo esquema de dos piezas, sección estadio.
             ax, ratio = funnel["long_axis"], funnel["len_ratio"]
@@ -471,13 +499,18 @@ def bore_funnels_and_vents(mold, master, props, funnels, coll):
                                      (bore_bottom + t_z + 0.2) * 0.5)),
             bore_base, funnel["sprue_r"], (t_z + 0.2) - bore_bottom, 'Z', coll,
         )
-        util.boolean(mold, neck, 'DIFFERENCE')
+        util.boolean(mold, neck, 'DIFFERENCE', solver='EXACT')
         util.remove_object(neck)
         bore = util.add_cone(
             "MF_funnelbore", Vector((funnel["x"], funnel["y"], (t_z + bore_top) * 0.5)),
-            funnel["sprue_r"], funnel["mouth_r"], bore_top - t_z, 'Z', coll,
+            funnel["sprue_r"],
+            # Extrapolate above the rim: the cutter overshoot must not shrink the
+            # opening at apex_z below the requested mouth radius.
+            funnel["mouth_r"] + (funnel["mouth_r"] - funnel["sprue_r"])
+            * (bore_top - funnel["apex_z"]) / (funnel["apex_z"] - t_z),
+            bore_top - t_z, 'Z', coll,
         )
-        util.boolean(mold, bore, 'DIFFERENCE')
+        util.boolean(mold, bore, 'DIFFERENCE', solver='EXACT')
         util.remove_object(bore)
 
     def clears_funnels(p):

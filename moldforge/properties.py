@@ -4,8 +4,8 @@ All size fields are in MILLIMETRES, whatever the scene's unit system (Metric, Im
 or none). The build converts mm to Blender units with the scene's unit scale
 (``core.units.mm_per_unit``), so a 3 mm wall is 3 mm whether the scene is set to
 millimetres, inches, or the bare "1 unit = 1 mm" convention. Sensible defaults suit
-print-scale models (~20-200 mm); the sprue/vents are auto-capped so they can't blow out
-a small mold.
+print-scale models (~20-200 mm). Semi-rectangular funnels and vents auto-fit;
+round funnels use the requested throat radius and mouth flare exactly.
 """
 
 import bpy
@@ -70,8 +70,9 @@ def mold_caps(context):
 
 
 def _clamp_sprue_radius(self, context):
-    if getattr(self, "big_throat", False):
-        return                                   # Oversized Throat = fully manual, no clamp
+    if (getattr(self, "funnel_style", 'ROUND') == 'ROUND'
+            or getattr(self, "big_throat", False)):
+        return                                   # Round and Oversized use exact input
     caps = mold_caps(context)
     if not caps:
         return
@@ -320,14 +321,13 @@ class MoldForgeProperties(bpy.types.PropertyGroup):
     sprue_radius: _dist("Radio de garganta", 10.0,
                         "Radio de la parte estrecha (BASE) del embudo — el agujero por "
                         "donde entra al molde. La boca (arriba) es este valor x Apertura "
-                        "de boca. Si escribes más de lo que el molde admite, se ajusta "
-                        "al máximo que cabe — salvo que Garganta sobredimensionada esté "
-                        "activa, que usa exactamente lo que escribes. El panel muestra "
-                        "el embudo que se construye",
+                        "de boca. En Redondo se usa exactamente el radio escrito. "
+                        "En Semirectangular se ajusta al molde, salvo que Garganta "
+                        "sobredimensionada esté activa",
                         mn=0.3, soft=60.0, update=_clamp_sprue_radius)
     big_throat: BoolProperty(
         name="Garganta sobredimensionada",
-        description="Garganta totalmente manual: usa EXACTAMENTE el Radio de garganta "
+        description="Garganta semirectangular totalmente manual: usa EXACTAMENTE el Radio de garganta "
                     "escrito, sin ningún límite de ajuste automático (normalmente se "
                     "limita a ≈30 % del semiancho del molde). Una garganta muy ancha "
                     "deja poca carcasa alrededor del agujero — el panel advierte, y el "
@@ -749,8 +749,8 @@ class MoldForgeProperties(bpy.types.PropertyGroup):
         name="Apertura del embudo", default=1.0, min=1.0, max=8.0,
         description="Ancho de boca como múltiplo del radio de la garganta — 1.0 es "
                     "un tubo recto (mejor cuando un cono ancho no cabe en la forma), "
-                    "mayor es un embudo receptor más ancho (limitado automáticamente "
-                    "al molde)",
+                    "mayor es un embudo receptor más ancho. En Redondo se respeta "
+                    "este múltiplo sin limitar la boca al contorno del molde",
     )
     funnel_style: EnumProperty(
         name="Estilo de embudo",
@@ -765,6 +765,7 @@ class MoldForgeProperties(bpy.types.PropertyGroup):
              "para la elongación"),
         ],
         default='SEMI_RECT',
+        update=_clamp_sprue_radius,
     )
     sprue_rect_len: _dist("Largo semirectangular", 3.0,
                           "Relación largo/ancho de la sección del embudo "

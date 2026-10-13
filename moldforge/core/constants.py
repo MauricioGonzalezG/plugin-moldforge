@@ -8,8 +8,8 @@ wall offset) unless noted.
 """
 
 # --- Funnel size caps (fraction of the mold half-width) -------------------- #
-# The Oversized Throat/Mouth toggles bypass these entirely (fully manual — the
-# typed value is built exactly); the caps apply only with the toggles off.
+# Throat/mouth caps apply to semi-rectangular funnels with Oversized toggles off.
+# Round funnels always use the requested sizes; vent caps remain automatic.
 THROAT_CAP = 0.30          # max throat radius
 MOUTH_CAP = 0.45           # max mouth radius
 VENT_CAP = 0.16            # max vent radius
