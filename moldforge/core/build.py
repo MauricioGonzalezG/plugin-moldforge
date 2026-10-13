@@ -411,10 +411,10 @@ def socket_pocket_cutter(master, plinth, props, coll):
     intersected with the column. Only the space UNDER the model counts - the flange
     beside a narrow body standing on a wide foot is the wing proper and is left
     alone - and only inside the column, so a flange hugging a sphere's lower half is
-    never trimmed. The column is the plinth outline pulled IN to half a millimetre
-    inside the shell wall (gap+shell, or the socket margin if that is smaller): a
-    wider column would reach past the wall of a stem standing under a bulge and
-    slit the flange off that wall. What is left of a bar between the column and the
+    never trimmed. Restrict the column to the model's actual base footprint,
+    excluding the plinth's added margin: rays outside that footprint can hit an
+    upper bulge and incorrectly classify a waist's exterior as an underside
+    pocket, slitting the flange off the wall. What is left between the column and the
     socket's edge sits inside the solid skirt shoulder, so nothing shows."""
     loop = None
     pmn, pmx = util.world_bbox(plinth)
@@ -427,15 +427,15 @@ def socket_pocket_cutter(master, plinth, props, coll):
     cx = sum(q[0] for q in loop) / len(loop)
     cy = sum(q[1] for q in loop) / len(loop)
     M = max(props.lock_margin, 0.0)
-    wall = props.silicone_gap + props.shell_wall
     mmn, mmx = util.world_bbox(master)
     z_floor = pmx.z - 1.0            # inside the socket band: the socket owns what's below
     column = _sawtooth_solid(loop, cx, cy, z_floor - 1.0, mmx.z + 1.0, 1, 0.0,
-                             min(M, wall) - 0.5 - M, coll, "MF_wcol")
+                             -0.5 - M, coll, "MF_wcol")
     cmn, cmx = util.world_bbox(column)
     n = int(max(min(round(max(cmx.x - cmn.x, cmx.y - cmn.y) / 1.5), 80), 24))
+    footprint = _cross_section_loop(column, z_floor)
     under = _under_model_solid(master, cmn.x - 1.0, cmx.x + 1.0, cmn.y - 1.0,
-                               cmx.y + 1.0, z_floor, coll, n)
+                               cmx.y + 1.0, z_floor, coll, n, footprint=footprint)
     util.boolean(under, column, 'INTERSECT')
     util.remove_object(column)
     if not under.data.polygons:
@@ -444,7 +444,7 @@ def socket_pocket_cutter(master, plinth, props, coll):
     return under
 
 
-def _under_model_solid(master, x0, x1, y0, y1, z_floor, coll, n):
+def _under_model_solid(master, x0, x1, y0, y1, z_floor, coll, n, footprint=None):
     """Heightfield solid of the space directly BELOW ``master`` over an n x n grid on
     [x0, x1] x [y0, y1]: each vertex rises from ``z_floor`` to the model's underside
     (the first hit of an upward ray), or stays a hair above the floor where nothing
@@ -456,10 +456,25 @@ def _under_model_solid(master, x0, x1, y0, y1, z_floor, coll, n):
     up = (inv.to_3x3() @ Vector((0.0, 0.0, 1.0))).normalized()
     lo = z_floor + 0.05
     H = [[lo] * (n + 1) for _ in range(n + 1)]
+
+    def in_footprint(x, y):
+        if footprint is None:
+            return True
+        inside = False
+        for a, b in zip(footprint, footprint[1:] + footprint[:1]):
+            if ((a[1] > y) != (b[1] > y)
+                    and x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]):
+                inside = not inside
+        return inside
+
     for i in range(n + 1):
         x = x0 + (x1 - x0) * i / n
         for j in range(n + 1):
             y = y0 + (y1 - y0) * j / n
+            # Grid padding must not sample an upper bulge outside the base and
+            # spread that tall cut back inside during the one-cell dilation.
+            if not in_footprint(x, y):
+                continue
             hit, loc, _nrm, _idx = master.ray_cast(inv @ Vector((x, y, z_floor - 1.0)),
                                                    up, depsgraph=dg)
             if hit:

@@ -2,6 +2,16 @@
 
 All notable changes. Versions are the add-on `version` in `blender_manifest.toml`.
 
+## 0.41.7 - Waist wings stay attached above a locking base
+
+- Restricts the underside-pocket cutter to the model's base footprint, excluding
+  the locking plinth's added margin. Exterior space beneath an upper bulge no
+  longer cuts a slot between a narrow waist and its clamp flange.
+- Masks heightfield samples outside that footprint before expanding the field,
+  preventing grid padding from spreading an exterior cut back into the waist.
+- Tests cover a flat-footed hourglass with an overhang, contact across the full
+  wing thickness, and preservation of a real hollow underside's open pocket.
+
 ## 0.41.6 - Round funnels respect the requested radius
 
 - Redondo uses the exact throat radius and mouth flare, including mouths wider
